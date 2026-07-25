@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta property="og:title" content="Alu TV - The People's Choice">
+<meta property="og:description" content="Quality news and exciting programs anywhere.">
+<meta property="og:image" content="https://firebasestorage.googleapis.com/v0/b/alu-tv-15c8a.firebasestorage.app/o/alutv_logo.png?alt=media">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://alutv.com">
+<meta charset="UTF-8"><meta name="google-site-verification" content="Dt70vuQuYRekCAWNsh9oTG6w-ufbsBnC41IIsXPfmvQ" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alu Tv</title>
+<script>
+function renderDefaultFeed(allArticles) {
+  const activeNav = document.querySelector('.nav-link.border-white');
+  const currentCategory = activeNav ? activeNav.dataset.target : 'Home';
+  renderArticles(currentCategory);
+}
+
+function renderNewsItem(article) {
+  if (article.views === undefined) { article.views = 0; }
+  const artDate = formatNewsDate(article.id);
+  const img = article.image ? `<img loading="lazy" src="${article.image}" alt="${article.title}" class="w-[100px] h-[75px] object-cover rounded-sm group-hover:opacity-90 transition-opacity flex-shrink-0" />` : `<div class="w-[100px] h-[75px] bg-gray-200 rounded-sm flex-shrink-0"></div>`;
+  return `<article class="js-open-article flex items-center gap-4 border-b border-gray-200 py-4 cursor-pointer group last:border-0" data-article-id="${article.id}">
+    ${img}
+    <div class="flex flex-col justify-center flex-1">
+       <span class="text-[10px] text-news-purple font-bold uppercase tracking-widest mb-1">${article.category || 'News'}</span>
+       <h3 class="font-bold text-base leading-tight mb-1 group-hover:text-purple-700 transition-colors line-clamp-2 text-gray-900">${article.title}</h3>
+       <div class="flex items-center gap-3 text-[11px] text-gray-500 font-medium">
+         <span>${artDate}</span>
+         <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>${article.views}</span>
+       </div>
+    </div>
+  </article>`;
+}
+
+function executeInstantLiveSearch(searchQuery, allArticles, outputContainer) {
+  const cleanQuery = searchQuery.trim().toLowerCase();
+  outputContainer.innerHTML = ''; // Clear prior loop outputs
+  if (cleanQuery === '') {
+    // If input is empty, render default full feed sequence
+    renderDefaultFeed(allArticles);
+    return;
+  }
+  
+  const filteredArticles = allArticles.filter(article => 
+    (article.title && article.title.toLowerCase().includes(cleanQuery)) ||
+    (article.category && article.category.toLowerCase().includes(cleanQuery)) ||
+    (article.content && article.content.toLowerCase().includes(cleanQuery)) ||
+    (article.summary && article.summary.toLowerCase().includes(cleanQuery))
+  );
+  
+  if (filteredArticles.length === 0) {
+    outputContainer.innerHTML = `
+      <div class="no-results" style="padding: 30px; text-align: center; color: #888;">
+        <p>No matching news items found for "${searchQuery}". Try alternative terms.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  outputContainer.innerHTML = `<div class="mb-6"><h2 class="text-xl md:text-2xl font-black text-gray-900 border-l-4 border-news-purple pl-3 tracking-tighter uppercase">Search Results for "${searchQuery}"</h2></div><div class="flex flex-col">`;
+  // Render search results matching parameters dynamically
+  filteredArticles.forEach(article => {
+    outputContainer.innerHTML += renderNewsItem(article); 
+  });
+  outputContainer.innerHTML += `</div>`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+
+
+// GLOBAL EVENT DELEGATION
+document.addEventListener('click', function(e) {
+    const youtubeLazy = e.target.closest('.js-load-youtube');
+    if (youtubeLazy) {
+        e.preventDefault();
+        e.stopPropagation();
+        loadYouTubeIframe(youtubeLazy);
+        return; // Don't trigger article open if they clicked the play button
+    }
+
+    const articleLink = e.target.closest('.js-open-article');
+    if (articleLink) {
+        e.preventDefault();
+        const articleId = articleLink.getAttribute('data-article-id');
+        if (articleId) {
+            openArticle(articleId);
+        }
+    }
+});
+
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.add('dark');
+  } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.remove('dark');
+  }
+
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  if (themeToggleBtn) {
+      themeToggleBtn.addEventListener('click', () => {
+          const currentTheme = document.documentElement.getAttribute('data-theme');
+          if (currentTheme === 'dark') {
+              document.documentElement.setAttribute('data-theme', 'light');
+              document.documentElement.classList.remove('dark');
+              localStorage.setItem('theme', 'light');
+          } else {
+              document.documentElement.setAttribute('data-theme', 'dark');
+              document.documentElement.classList.add('dark');
+              localStorage.setItem('theme', 'dark');
+          }
+      });
+  }
+
+   const searchInput = document.getElementById('liveSearchInput');
+   if (searchInput) {
+       searchInput.addEventListener('input', (e) => {
+           const container = document.getElementById('main-content');
+           if (container) {
+               // Make sure we only show search in the grid
+               document.getElementById('homepage-grid').classList.remove('hidden');
+const bottomContainerNav = document.getElementById('home-bottom-content');
+if (bottomContainerNav) bottomContainerNav.classList.remove('hidden');
+document.getElementById('single-article-view').classList.add('hidden');
+               document.getElementById('home-bottom-content').classList.add('hidden');
+               
+               executeInstantLiveSearch(e.target.value, articles.filter(a => a.status === 'Publish'), container);
+           }
+       });
+   }
+});
+
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+body { 
+font-family: 'Inter', sans-serif; 
+background-color: #f3f4f6; 
+color: #111827; 
+}
+.bg-news-purple { background-color: #3B0764 !important; }
+.text-news-purple { color: #3B0764 !important; }
+.border-news-purple { border-color: #3B0764 !important; }
+.bg-news-dark { background-color: #212121; }
+/* Hide scrollbar for clean UI */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+.breaking-news-ticker {
+  display: block;
+  width: 100%;
+  background: #111;
+  color: #fff;
+  height: 40px;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+.ticker-title {
+  display: inline-block;
+  background: #7b1fa2;
+  color: white;
+  padding: 10px 15px;
+  font-weight: bold;
+  font-size: 13px;
+  float: left;
+  z-index: 10;
+}
+.ticker-content-wrap {
+  overflow: hidden;
+  padding: 10px 0;
+}
+.ticker-content {
+  display: inline-block;
+  white-space: nowrap;
+  padding-left: 100%;
+  animation: ticker-move 90s linear infinite;
+}
+@keyframes ticker-move {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-100%, 0, 0); }
+}
+.ticker-content span {
+  display: inline-block;
+  padding-right: 50px;
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.premium-showcase-section {
+  background: #0a0a0a;
+  color: #ffffff;
+  padding: 30px 15px;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.section-header h2 {
+  color: #7b1fa2;
+  font-size: 22px;
+  margin-bottom: 5px;
+  letter-spacing: 1px;
+}
+.section-header p {
+  color: #aaa;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.cinematic-card {
+  background: #161616;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #222;
+}
+.video-container video, .video-container iframe {
+  width: 100%;
+  display: block;
+}
+.cinematic-meta {
+  padding: 15px;
+}
+.cinematic-meta .badge {
+  background: #7b1fa2;
+  font-size: 10px;
+  font-weight: bold;
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.cinematic-meta h3 {
+  margin: 10px 0 5px 0;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.cinematic-meta .pub-date {
+  color: #666;
+  font-size: 12px;
+}
+
+/* Global English Theme Mappings */
+:root {
+  --bg-color: #ffffff;
+  --text-color: #111111;
+  --card-bg: #f9f9f9;
+  --border-color: #eeeeee;
+}
+[data-theme="dark"] {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --card-bg: #1e1e1e;
+  --border-color: #333333;
+}
+body {
+  background-color: var(--bg-color) !important;
+  color: var(--text-color) !important;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+/* Ensure tailwind doesn't override our text colors in dark mode where it matters */
+[data-theme="dark"] .bg-gray-100, [data-theme="dark"] .bg-gray-50 { background-color: var(--bg-color) !important; }
+[data-theme="dark"] .bg-white { background-color: var(--card-bg) !important; }
+[data-theme="dark"] .text-gray-900, [data-theme="dark"] .text-gray-800, [data-theme="dark"] .text-gray-700, [data-theme="dark"] .text-gray-600, [data-theme="dark"] .text-gray-500 { color: var(--text-color) !important; }
+[data-theme="dark"] .border-gray-200, [data-theme="dark"] .border-gray-300 { border-color: var(--border-color) !important; }
+
+.theme-toggle-btn {
+  background: transparent;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.5);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+  white-space: nowrap;
+}
+.theme-toggle-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+</style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.classList.add('dark');
+  }
+</script>
+</head>
+<body class="flex flex-col min-h-screen w-full overflow-x-hidden bg-gray-100">
+<header class="bg-news-purple text-white flex flex-col lg:flex-row lg:items-center px-4 lg:px-6 py-3 lg:py-0 lg:h-16 shadow-lg shrink-0 gap-4 lg:gap-0 z-20">
+<div class="flex items-center justify-between w-full lg:w-auto lg:mr-8">
+<div class="flex items-center gap-3">
+<a href="#" onclick="navigate('Home', event)" class="font-black text-2xl lg:text-3xl tracking-tighter uppercase flex items-center">
+ALU TV
+</a>
+</div>
+<div class="flex items-center gap-3 lg:hidden">
+<a href="#" target="_blank" id="header-social-fb" class="hidden text-white hover:text-gray-300 transition-colors">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+</a>
+<a href="#" target="_blank" id="header-social-yt" class="hidden text-white hover:text-gray-300 transition-colors">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+</a>
+<div class="flex items-center space-x-1 bg-purple-800 px-2 py-1 rounded text-[10px] font-bold">
+<span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+<span>LIVE</span>
+</div>
+</div>
+</div>
+<div class="flex items-center w-full lg:w-auto overflow-x-auto no-scrollbar pb-1 lg:pb-0">
+<nav class="flex overflow-x-auto no-scrollbar py-3 lg:py-0 px-4 lg:px-6 gap-6 text-sm font-bold tracking-wider uppercase text-white/90">
+<a href="#" onclick="navigate('Home', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap border-b-4 border-white lg:border-white pb-1 lg:py-5" data-target="Home">Home</a>
+<a href="#" onclick="navigate('Politics', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Politics">Politics</a>
+<a href="#" onclick="navigate('Business', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Business">Business</a>
+<a href="#" onclick="navigate('Agriculture', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Agriculture">Agriculture</a>
+<a href="#" onclick="navigate('Security', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Security">Security</a>
+<a href="#" onclick="navigate('Legislative', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Legislative">Legislative</a>
+<a href="#" onclick="navigate('Lifestyle', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Lifestyle">Lifestyle</a>
+<a href="#" onclick="navigate('Sports', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Sports">Sports</a>
+<a href="#" onclick="navigate('Social', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Social">Social</a>
+<a href="#" onclick="navigate('Entertainment', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Entertainment">Entertainment</a>
+<a href="#" onclick="navigate('History', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="History">History</a>
+<a href="#" onclick="navigate('Law', event)" class="nav-link hover:opacity-80 transition-opacity whitespace-nowrap lg:py-5 lg:border-b-4 border-transparent lg:border-transparent" data-target="Law">Law</a>
+<input type="text" id="liveSearchInput" placeholder="Search news..." class="bg-purple-800 text-white placeholder-purple-300 border border-purple-600 rounded px-3 py-1 text-xs focus:outline-none focus:border-white transition-colors ml-4" />
+<button id="themeToggleBtn" class="theme-toggle-btn ml-4" aria-label="Toggle Theme Mode">🌓 Switch Theme</button>
+</nav>
+<div class="hidden lg:flex items-center gap-4 ml-6 pl-6 border-l border-white/20 shrink-0">
+<a href="#" target="_blank" id="header-desktop-social-fb" class="hidden text-white hover:text-gray-300 transition-colors">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+</a>
+<a href="#" target="_blank" id="header-desktop-social-yt" class="hidden text-white hover:text-gray-300 transition-colors">
+<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+</a>
+</div>
+</div>
+</header>
+<a href="#" target="_blank" id="public-office-flyer-link" class="hidden w-full block bg-gray-100 border-b border-gray-300">
+<img loading="lazy" id="public-office-flyer-image" src="" alt="Office Flyer" class="w-full h-auto object-contain max-h-[300px]">
+</a>
+
+<div class="breaking-news-ticker">
+  <div class="ticker-title">BREAKING NEWS</div>
+  <div class="ticker-content-wrap">
+    <div class="ticker-content" id="breakingTicker">
+      <!-- Injected Dynamically via JS -->
+      <span>• Loading critical updates from Alu TV newsroom... </span>
+    </div>
+  </div>
+</div>
+
+<main class="flex-1 w-full relative max-w-[1400px] mx-auto bg-gray-100">
+<div id="homepage-grid" class="flex flex-col lg:flex-row p-4 gap-4 w-full">
+<section class="w-full lg:w-2/3 flex flex-col gap-4 pb-10" id="main-content">
+</section>
+<aside id="main-sidebar" class="w-full lg:w-1/3 flex flex-col gap-4 pb-10">
+    <a href="https://example.com" target="_blank" id="dynamic-ad-link" class="bg-gray-200 border-dashed border-2 border-gray-300 flex flex-col items-center justify-center p-2 relative flex-shrink-0 cursor-pointer hover:bg-gray-300 transition-colors h-32 w-full block">
+      <span class="absolute top-1 left-1 text-[8px] font-bold text-gray-400 uppercase tracking-widest z-10">Advertisement</span>
+      <div class="text-center w-full h-full flex flex-col items-center justify-center">
+        <img loading="lazy" id="dynamic-ad-image" src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=300&h=250" class="absolute inset-0 w-full h-full object-cover rounded-sm" alt="Ad Background">
+        <div class="relative z-20">
+          <div id="dynamic-ad-title" class="text-sm font-black text-gray-800 uppercase bg-white/80 px-2 py-1 rounded">Premium Cloud Solutions</div>
+          <button class="mt-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white text-[10px] px-3 py-1 font-bold uppercase tracking-wider rounded shadow">Click To Learn More</button>
+        </div>
+      </div>
+    </a>
+  </aside>
+</div> 
+<div id="home-bottom-content" class="w-full px-4 pb-10"></div>
+<div id="single-article-view" class="hidden p-4 md:p-6 w-full max-w-4xl mx-auto">
+</div>
+</main>
+<div id="admin-dashboard" class="bg-gray-200 border-t-4 border-news-dark shrink-0 flex-col mt-auto w-full hidden">
+<div class="bg-news-dark text-white px-6 py-4 flex justify-between items-center shrink-0">
+<div>
+<h1 class="text-xl font-black uppercase tracking-widest">Alu Tv Admin Dashboard</h1>
+<div id="admin-user-info" class="text-xs text-gray-400 mt-1">Logged in as: <span id="admin-role-display" class="font-bold text-white uppercase"></span></div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs font-bold uppercase tracking-wider text-gray-400 hidden md:inline">Live Preview Mode</span>
+<button onclick="logoutAdmin()" class="bg-news-purple hover:bg-purple-700 text-white text-xs px-3 py-1 rounded font-bold uppercase tracking-wider transition-colors">Logout</button>
+</div>
+</div>
+<div class="p-4 md:p-8">
+<div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="bg-white p-6 rounded shadow-sm border border-gray-200 h-fit">
+<h2 class="font-bold text-lg mb-4 border-b pb-2" id="admin-art-form-title">Add New Article</h2>
+<form onsubmit="handleArticleSubmit(event)" class="space-y-4">
+<input type="hidden" id="admin-art-id" value="">
+<div class="grid grid-cols-2 gap-4">
+  <div>
+    <label class="block text-xs font-bold text-gray-700 mb-1">Post Type</label>
+    <select id="admin-art-type" onchange="togglePostType()" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+      <option value="article">Article</option>
+      <option value="video">Video</option>
+      <option value="audio">Audio</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-bold text-gray-700 mb-1">Status</label>
+    <select id="admin-art-status" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+      <option value="Publish">Publish</option>
+      <option value="Draft">Draft</option>
+    </select>
+  </div>
+</div>
+<div>
+  <label class="block text-xs font-bold text-gray-700 mb-1">Category</label>
+  <select id="admin-art-category" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+    <option value="Politics">Politics</option>
+    <option value="Business">Business</option>
+    <option value="Agriculture">Agriculture</option>
+    <option value="Security">Security</option>
+    <option value="Legislative">Legislative</option>
+    <option value="Lifestyle">Lifestyle</option>
+    <option value="Sports">Sports</option>
+    <option value="Social">Social</option>
+    <option value="Entertainment">Entertainment</option>
+    <option value="History">History</option>
+    <option value="Law">Law</option>
+</select>
+</div>
+<div>
+  <label class="block text-xs font-bold text-gray-700 mb-1">Title</label>
+  <input type="text" id="admin-art-title" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div id="admin-field-subtitle">
+  <label class="block text-xs font-bold text-gray-700 mb-1">Subtitle</label>
+  <input type="text" id="admin-art-subtitle" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div id="admin-field-content">
+  <label class="block text-xs font-bold text-gray-700 mb-1">Content</label>
+  <div class="border border-gray-300 rounded overflow-hidden">
+    <div class="bg-gray-100 border-b border-gray-300 px-2 py-1 flex gap-2 text-sm items-center">
+      <button type="button" onclick="document.execCommand('bold',false,null)" class="px-2 font-bold hover:bg-gray-200 rounded">B</button>
+      <button type="button" onclick="document.execCommand('italic',false,null)" class="px-2 italic hover:bg-gray-200 rounded">I</button>
+      <button type="button" onclick="document.execCommand('underline',false,null)" class="px-2 underline hover:bg-gray-200 rounded">U</button>
+      <span class="w-px h-4 bg-gray-300 mx-1"></span>
+      <select onchange="document.execCommand('formatBlock',false,this.value); this.selectedIndex=0;" class="text-xs border border-gray-300 rounded bg-white px-1">
+        <option value="">Heading</option>
+        <option value="H1">H1</option>
+        <option value="H2">H2</option>
+        <option value="H3">H3</option>
+        <option value="P">Paragraph</option>
+      </select>
+    </div>
+    <div id="admin-art-content" contenteditable="true" class="p-3 min-h-[120px] max-h-[300px] overflow-y-auto text-sm focus:outline-none focus:bg-gray-50"></div>
+  </div>
+</div>
+<div id="admin-field-top-image">
+  <label class="block text-xs font-bold text-gray-700 mb-1">Top Cover Image (Upload)</label>
+  <input type="file" id="admin-art-image" accept="image/png, image/jpeg, image/*" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple bg-white">
+</div>
+<div id="admin-field-body-image">
+  <label class="block text-xs font-bold text-gray-700 mb-1">Inline Body Image (Upload)</label>
+  <input type="file" id="admin-art-body-image" accept="image/png, image/jpeg, image/*" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple bg-white">
+</div>
+<div id="admin-field-video" class="hidden">
+  <label class="block text-xs font-bold text-gray-700 mb-1">Video URL (MP4)</label>
+  <input type="text" id="adminVideoUrl" placeholder="Paste Direct Video URL (MP4)..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div id="admin-field-audio" class="hidden">
+  <label class="block text-xs font-bold text-gray-700 mb-1">Audio URL (MP3)</label>
+  <input type="text" id="adminAudioUrl" placeholder="Paste Direct Audio URL (MP3)..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div class="flex gap-2">
+  <button type="submit" id="admin-art-submit-btn" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider flex-1 hover:bg-purple-800 transition-colors">Publish Post</button>
+  <button type="button" onclick="resetArticleForm()" id="admin-art-cancel-btn" class="hidden bg-gray-500 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider hover:bg-gray-700 transition-colors">Cancel</button>
+</div>
+</form>
+</div>
+<div id="admin-media-config" class="space-y-8">
+<div class="bg-white p-6 rounded shadow-sm border border-gray-200">
+<h2 class="font-bold text-lg mb-4 border-b pb-2">Social Media Links</h2>
+<form onsubmit="handleSocialLinksUpdate(event)" class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Facebook Page URL</label>
+<input type="url" id="admin-facebook-url" placeholder="https://facebook.com/..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">YouTube Channel URL</label>
+<input type="url" id="admin-youtube-url" placeholder="https://youtube.com/..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<button type="submit" class="bg-black text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-gray-800 transition-colors">Update Social Links</button>
+</form>
+</div>
+
+
+<div class="bg-white p-6 rounded shadow-sm border border-gray-200">
+<h2 class="font-bold text-lg mb-4 border-b pb-2">Update Dynamic Ad</h2>
+<form onsubmit="handleAdUpdate(event)" class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Ad Title / Text</label>
+<input type="text" id="admin-ad-title-input" required placeholder="Flash Sale 50% Off!" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Target Link URL</label>
+<input type="url" id="admin-ad-link-input" required placeholder="https://..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Background Image (Upload)</label>
+<input type="file" id="admin-ad-image-input" accept="image/*" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple bg-white">
+</div>
+<button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-blue-700 transition-colors">Update Ad</button>
+</form>
+</div>
+<div class="bg-white p-6 rounded shadow-sm border border-gray-200">
+<h2 class="font-bold text-lg mb-4 border-b pb-2">Update Office Flyer</h2>
+<form onsubmit="handleOfficeFlyerUpdate(event)" class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Target Link URL</label>
+<input type="url" id="admin-flyer-link-input" required placeholder="https://..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Flyer Image (Upload)</label>
+<input type="file" id="admin-flyer-image-input" accept="image/*" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple bg-white">
+</div>
+<button type="submit" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-purple-800 transition-colors">Update Office Flyer</button>
+</form>
+</div>
+</div>
+</div>
+<div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+<div class="bg-white p-6 rounded shadow-sm border border-gray-200 h-fit">
+  <h2 class="font-bold text-lg mb-4 border-b pb-2">Upload Alu TV Original</h2>
+  <form onsubmit="handleOriginalSubmit(event)" class="space-y-4">
+    <div>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Title</label>
+      <input type="text" id="admin-orig-title" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Category Badge</label>
+      <input type="text" id="admin-orig-badge" required placeholder="e.g. CULTURAL HISTORY" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Poster Image URL (or upload)</label>
+      <input type="file" id="admin-orig-poster" accept="image/*" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple bg-white">
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Video URL (YouTube or MP4)</label>
+      <input type="url" id="admin-orig-video-url" required placeholder="https://..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+    </div>
+    <button type="submit" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-purple-800 transition-colors">Publish Original</button>
+  </form>
+</div>
+
+<div class="bg-white p-6 rounded shadow-sm border border-gray-200 h-fit">
+  <h2 class="font-bold text-lg mb-4 border-b pb-2">Manage Breaking News Ticker</h2>
+  <div class="space-y-4">
+    <div>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Live Content / Ticker Text</label>
+      <textarea id="admin-ticker-text" rows="3" placeholder="Type the breaking news here..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple"></textarea>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="handleTickerSave(this)" class="flex-1 bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider hover:bg-purple-800 transition-colors">Save / Update</button>
+      <button onclick="handleTickerClear(this)" class="flex-1 bg-red-600 text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider hover:bg-red-700 transition-colors">Clear / Delete</button>
+    </div>
+  </div>
+</div>
+</div>
+<div id="admin-post-management" class="max-w-6xl mx-auto mt-8 bg-white p-6 rounded shadow-sm border border-gray-200">
+<h2 class="font-bold text-lg mb-4 border-b pb-2">Manage Posts</h2>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[600px]">
+<thead>
+<tr class="bg-gray-100 text-xs uppercase tracking-wider text-gray-600">
+<th class="p-3 border-b">Title</th>
+<th class="p-3 border-b">Category</th>
+<th class="p-3 border-b">Status</th>
+<th class="p-3 border-b text-right">Actions</th>
+</tr>
+</thead>
+<tbody id="admin-post-table-body" class="text-sm divide-y divide-gray-200">
+</tbody>
+</table>
+</div>
+</div>
+<div id="admin-manage-users" class="max-w-6xl mx-auto mt-8 bg-white p-6 rounded shadow-sm border border-gray-200 hidden">
+<h2 class="font-bold text-lg mb-4 border-b pb-2">Manage Users (Super Admin Only)</h2>
+<form onsubmit="handleCreateUser(event)" class="space-y-4 max-w-sm mb-6">
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Name</label>
+<input type="text" id="new-user-name" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Email</label>
+<input type="email" id="new-user-email" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+<input type="text" id="new-user-password" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Role</label>
+<select id="new-user-role" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+<option value="admin">Admin</option>
+<option value="editor">Editor</option>
+<option value="reporter">Reporter</option>
+</select>
+</div>
+<button type="submit" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-purple-800 transition-colors">Create User</button>
+</form>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[600px]">
+<thead>
+<tr class="bg-gray-100 text-xs uppercase tracking-wider text-gray-600">
+<th class="p-3 border-b">Name</th>
+<th class="p-3 border-b">Email</th>
+<th class="p-3 border-b">Role</th>
+<th class="p-3 border-b text-right">Actions</th>
+</tr>
+</thead>
+<tbody id="admin-users-table-body" class="text-sm divide-y divide-gray-200">
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="login-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex justify-center items-center p-4 lg:p-10">
+<div class="bg-white rounded max-w-sm w-full p-6 shadow-2xl relative">
+<button onclick="closeLoginModal()" class="absolute top-2 right-2 text-gray-500 hover:text-black p-2 rounded-full z-10 transition-colors">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+</button>
+<h2 class="text-xl font-black uppercase tracking-widest mb-4">Admin Login</h2>
+<form onsubmit="handleLoginSubmit(event)" class="space-y-4">
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Email</label>
+<input type="email" id="login-username" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<div>
+<label class="block text-xs font-bold text-gray-700 mb-1">Password</label>
+<input type="password" id="login-password" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+</div>
+<p id="login-error" class="text-xs text-news-purple font-bold hidden">Invalid credentials</p>
+<button type="submit" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-purple-800 transition-colors">Login</button>
+</form>
+</div>
+</div>
+<footer class="h-auto lg:h-12 bg-news-dark text-gray-500 text-[10px] flex flex-col lg:flex-row items-center px-6 justify-between shrink-0 border-t border-black py-4 lg:py-0 gap-4 lg:gap-0 w-full mt-auto">
+<div class="flex items-center gap-4">
+<div>&copy; 2026 Alu Tv. All Rights Reserved.</div>
+<div class="flex items-center gap-3 ml-2 border-l border-gray-700 pl-4">
+<a href="#" target="_blank" id="footer-social-fb" class="hidden text-gray-400 hover:text-white transition-colors">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+</a>
+<a href="#" target="_blank" id="footer-social-yt" class="hidden text-gray-400 hover:text-white transition-colors">
+<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+</a>
+</div>
+</div>
+<div class="flex flex-wrap justify-center space-x-4 uppercase tracking-tighter font-bold">
+<a href="#" onclick="event.preventDefault()" class="hover:text-white transition-colors">Privacy Policy</a>
+<a href="#" onclick="event.preventDefault()" class="hover:text-white transition-colors">Cookie Settings</a>
+<a href="#" onclick="event.preventDefault()" class="hover:text-white transition-colors">Contact Us</a>
+<a href="#" onclick="event.preventDefault(); openLoginModal()" class="hover:text-white transition-colors">Admin Login</a>
+</div>
+</footer>
+<script crossorigin="anonymous" src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+<script crossorigin="anonymous" src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+<script crossorigin="anonymous" src="https://www.gstatic.com/firebasejs/10.9.0/firebase-storage-compat.js"></script>
+<script>
+// 1. Firebase Setup & Database Connection
+const firebaseConfig = {
+apiKey: "AIzaSyA1Ee4QugQJQ_FS-lMkjSKkRNC_2Z5wpyI",
+authDomain: "alu-tv-15c8a.firebaseapp.com",
+databaseURL: "https://alu-tv-15c8a-default-rtdb.firebaseio.com",
+projectId: "alu-tv-15c8a",
+storageBucket: "alu-tv-15c8a.firebasestorage.app",
+messagingSenderId: "795605070409",
+appId: "1:795605070409:web:56bf4d9c89c9d12fe18598",
+measurementId: "G-PQY3ZB45CS"
+};
+let articles = [];
+let db = null;
+let currentUserRole = null; // 'superadmin', 'admin', 'editor', 'reporter'
+firebase.initializeApp(firebaseConfig);
+db = firebase.database();
+
+// Real-time listener for Settings (Ticker)
+db.ref('settings/ticker').on('value', (snapshot) => {
+    const customTicker = snapshot.val();
+    const tickerElement = document.getElementById('breakingTicker');
+    if (tickerElement && customTicker) {
+        // Find existing automated items if we want to combine, or just overwrite. Overwriting might be best if it's "live content"
+        // But maybe they want it prepended. Let's prepend it to the automated ones.
+        
+        // Actually, we'll store customTicker globally and updateTicker will combine them.
+        window.customTickerText = customTicker;
+        const adminInput = document.getElementById("admin-ticker-text");
+        if (adminInput) adminInput.value = customTicker;
+        if (typeof articles !== 'undefined') {
+           updateTicker(articles);
+        }
+    } else if (tickerElement && !customTicker) {
+        window.customTickerText = '';
+        if (typeof articles !== 'undefined') {
+           updateTicker(articles);
+        }
+    }
+});
+
+// Real-time listener for Originals
+let originals = JSON.parse(localStorage.getItem('alu_originals')) || [];
+db.ref('originals').on('value', (snapshot) => {
+    const data = snapshot.val();
+    originals = data ? Object.values(data) : [];
+    originals.sort((a, b) => b.id - a.id); // Sort by newest first
+    renderOriginals();
+});
+
+function renderOriginals() {
+    const grid = document.getElementById('documentaryGrid');
+    if (!grid) return;
+    
+    if (originals.length === 0) {
+       return;
+    }
+    
+    grid.innerHTML = originals.map(orig => {
+       const dateStr = new Date(orig.id).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+       const poster = orig.posterUrl || 'documentary-cover.jpg';
+       const embedUrl = getYouTubeEmbedUrl(orig.videoUrl);
+       
+       let playerHtml = '';
+       if (embedUrl !== orig.videoUrl) {
+           playerHtml = createYouTubeLazyPlayer(orig.videoUrl, "w-full aspect-video border-0 overflow-hidden", "w-full aspect-video border-0");
+       } else {
+           playerHtml = `
+              <video controls preload="metadata" poster="${poster}" class="w-full aspect-video object-cover bg-black block">
+                <source src="${orig.videoUrl}" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+           `;
+       }
+       return `
+          <div class="cinematic-card js-open-article" data-article-id="${orig.id}" style="cursor:pointer;">
+            <div class="video-container">
+              ${playerHtml}
+            </div>
+            <div class="cinematic-meta">
+              <span class="badge">${orig.badge || 'ORIGINAL'}</span>
+              <h3>${orig.title}</h3>
+              <div class="flex items-center gap-3 text-gray-300 text-xs mt-2 font-medium">
+             <span>Published: ${dateStr}</span>
+             <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>${orig.views || 0} Views</span>
+         </div>
+            </div>
+          </div>
+       `;
+    }).join('');
+}
+
+// Real-time listener for articles
+let isInitialLoad = true;
+db.ref('articles').on('value', (snapshot) => {
+const data = snapshot.val();
+articles = data ? Object.values(data) : [];
+// Sort by descending ID (which acts as a timestamp for new posts)
+articles.sort((a, b) => b.id - a.id);
+renderAdminTable();
+if (window.togglePostType) window.togglePostType();
+const urlParams = new URLSearchParams(window.location.search);
+const queryId = urlParams.get('id');
+if (isInitialLoad && (queryId || window.location.hash.startsWith('#post-'))) {
+const postId = queryId || window.location.hash.replace('#post-', '');
+openArticle(postId, true);
+isInitialLoad = false;
+} else {
+const activeNav = document.querySelector('.nav-link.border-white');
+const currentCategory = activeNav ? activeNav.dataset.target : 'Home';
+renderArticles(currentCategory);
+// Update open article if one is currently being viewed
+if (!document.getElementById('single-article-view').classList.contains('hidden') && (queryId || window.location.hash.startsWith('#post-'))) {
+const postId = queryId || window.location.hash.replace('#post-', '');
+openArticle(postId, true);
+}
+isInitialLoad = false;
+}
+}, (err) => {
+console.warn("Database error:", err);
+});
+let allUsers = [];
+db.ref('users').on('value', (snapshot) => {
+const data = snapshot.val();
+allUsers = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })) : [];
+if (currentUserRole === 'superadmin') {
+renderUsersTable();
+}
+});
+// Real-time listeners for Media & Ads settings
+db.ref('settings/social').on('value', (snapshot) => {
+const social = snapshot.val();
+if (social) {
+const headerFb = document.getElementById('header-social-fb');
+const headerYt = document.getElementById('header-social-yt');
+const headerDeskFb = document.getElementById('header-desktop-social-fb');
+const headerDeskYt = document.getElementById('header-desktop-social-yt');
+const footerFb = document.getElementById('footer-social-fb');
+const footerYt = document.getElementById('footer-social-yt');
+if (social.facebook) {
+headerFb.href = social.facebook;
+headerFb.classList.remove('hidden');
+headerDeskFb.href = social.facebook;
+headerDeskFb.classList.remove('hidden');
+footerFb.href = social.facebook;
+footerFb.classList.remove('hidden');
+} else {
+headerFb.classList.add('hidden');
+headerDeskFb.classList.add('hidden');
+footerFb.classList.add('hidden');
+}
+if (social.youtube) {
+headerYt.href = social.youtube;
+headerYt.classList.remove('hidden');
+headerDeskYt.href = social.youtube;
+headerDeskYt.classList.remove('hidden');
+footerYt.href = social.youtube;
+footerYt.classList.remove('hidden');
+} else {
+headerYt.classList.add('hidden');
+headerDeskYt.classList.add('hidden');
+footerYt.classList.add('hidden');
+}
+}
+});
+function getResponsiveVideoPlayer(url) {
+if (!url) return '<p style="color:white; padding:10px;">Babu bidiyo da aka ɗora</p>';
+const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+const match = url.match(youtubeRegex);
+if (match && match[1]) {
+const videoId = match[1];
+return `
+<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
+  ${createYouTubeLazyPlayer('https://www.youtube.com/watch?v=' + videoId, 'w-full h-full absolute inset-0', 'w-full h-full absolute inset-0')}
+</div>`;
+} else {
+return `
+<video controls playsinline preload="metadata" style="width:100%; max-height:450px; border-radius:8px; background:#000;">
+<source src="${url}" type="video/mp4">
+Wayarka ba ta goyon bayan wannan bidiyon.
+</video>`;
+}
+}
+db.ref('settings/videoUrl').on('value', (snapshot) => {
+const url = snapshot.val();
+const container = document.getElementById('video-container');
+if (container) {
+container.innerHTML = getResponsiveVideoPlayer(url);
+}
+// Update download button if it exists
+const dlBtn = document.getElementById('video-download-btn');
+if (dlBtn && url) {
+dlBtn.href = url;
+if (url.includes('youtube.com') || url.includes('youtu.be')) {
+dlBtn.removeAttribute('download');
+dlBtn.setAttribute('target', '_blank');
+} else {
+dlBtn.setAttribute('download', 'video.mp4');
+dlBtn.removeAttribute('target');
+}
+}
+});
+db.ref('settings/ad').on('value', (snapshot) => {
+const ad = snapshot.val();
+if (ad) {
+document.getElementById('dynamic-ad-title').textContent = ad.title || 'Dynamic Banner Ad';
+document.getElementById('dynamic-ad-link').href = ad.link || '#';
+if (ad.image) {
+document.getElementById('dynamic-ad-image').src = ad.image;
+}
+}
+});
+db.ref('office_flyer/current').on('value', (snapshot) => {
+const data = snapshot.val();
+const flyerLink = document.getElementById('public-office-flyer-link');
+const flyerImage = document.getElementById('public-office-flyer-image');
+if (data && data.image) {
+flyerLink.href = data.link || '#';
+flyerImage.src = data.image;
+flyerLink.classList.remove('hidden');
+} else {
+flyerLink.classList.add('hidden');
+}
+});
+// Article View Logic
+// Article View Logic
+function shareArticle(id, title, text) {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = id ? `${baseUrl}?id=${id}` : window.location.href;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: title,
+            text: text,
+            url: shareUrl
+        }).catch(console.error);
+    } else {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(() => {
+                alert('Copy the URL to share: ' + shareUrl);
+            });
+        } else {
+            alert('Copy the URL to share: ' + shareUrl);
+        }
+    }
+}
+
+// FUNCTION DON TACE LOKACI (DATE FORMATTER)
+function formatNewsDate(dateString) {
+  if (!dateString) return "Just Now";
+  
+  const timestamp = !isNaN(Number(dateString)) ? Number(dateString) : dateString;
+  const newsDate = new Date(timestamp);
+  const now = new Date();
+  const timeDifference = now - newsDate;
+  
+  // Idan labarin bai kai sa'a guda da duba shi ba
+  const minutes = Math.floor(timeDifference / 60000);
+  if (minutes < 60) {
+    return minutes <= 1 ? "Just Now" : `${minutes} mins ago`;
+  }
+  
+  // Idan bai kai kwana 1 ba
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hours ago`;
+  }
+  
+  // Idan ya wuce kwana daya, zai nuna ainihin ranar (Misali: Jul 8, 2026)
+  return newsDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+
+function getYouTubeVideoId(url) {
+    if (!url) return '';
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+        return url;
+    }
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})/);
+    return match ? match[1] : '';
+}
+
+function createYouTubeLazyPlayer(url, containerClasses, iframeClasses) {
+    const videoId = getYouTubeVideoId(url);
+    if (!videoId) return '';
+    
+    const thumbUrl = 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg';
+    
+    return `
+      <div class="youtube-lazy-player js-load-youtube ${containerClasses}" data-videoid="${videoId}" data-iframeclasses="${iframeClasses}" style="position:relative; cursor:pointer; background-image:url('${thumbUrl}'); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center;">
+        <div style="width:68px; height:48px; display:flex; align-items:center; justify-content:center; transition: opacity 0.3s;" class="hover:opacity-80">
+          <svg viewBox="0 0 68 48" width="68" height="48"><path d="M66.52,7.74c-0.78-2.93-2.49-5.41-5.42-6.19C55.79,.13,34,0,34,0S12.21,.13,6.9,1.55 C3.97,2.33,2.27,4.81,1.48,7.74C0.06,13.05,0,24,0,24s0.06,10.95,1.48,16.26c0.78,2.93,2.49,5.41,5.42,6.19 C12.21,47.87,34,48,34,48s21.79-0.13,27.1-1.55c2.93-0.78,4.64-3.26,5.42-6.19C67.94,34.95,68,24,68,24S67.94,13.05,66.52,7.74z" fill="#FF0000"></path><path d="M 45,24 27,14 27,34" fill="#fff"></path></svg>
+        </div>
+      </div>
+    `;
+}
+
+function loadYouTubeIframe(container) {
+    
+    const videoId = container.dataset.videoid;
+    const classes = container.dataset.iframeclasses || '';
+    
+    const iframeHtml = `<iframe loading="lazy" class="${classes}" src="https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1&modestbranding=1&rel=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="width:100%; height:100%; position:absolute; top:0; left:0;"></iframe>`;
+    
+    container.style.backgroundImage = 'none';
+    container.style.cursor = 'default';
+    container.onclick = null;
+    container.innerHTML = iframeHtml;
+}
+
+function getYouTubeEmbedUrl(url) {
+    if (!url) return '';
+    let videoId = '';
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+        videoId = url;
+    } else {
+        const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})/);
+        if (match && match[1]) {
+            videoId = match[1];
+        }
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}?controls=1&modestbranding=1&rel=0&iv_load_policy=3` : url;
+}
+
+
+function closeArticle() {
+  document.getElementById('single-article-view').classList.add('hidden');
+  document.getElementById('homepage-grid').classList.remove('hidden');
+  const bottomContainerNav = document.getElementById('home-bottom-content');
+  if (bottomContainerNav) {
+      const activeNav = document.querySelector('.nav-link.border-white');
+      if (activeNav && activeNav.dataset.target === 'Home') {
+          bottomContainerNav.classList.remove('hidden');
+      }
+  }
+  history.pushState(null, null, window.location.pathname);
+}
+
+function openArticle(id, preventViewIncrement = false) {
+  let article = articles.find(a => a.id == id);
+  
+  if (!article) {
+     article = originals.find(a => a.id == id);
+  }
+  
+  if (!article) return;
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('id') !== String(id)) {
+      history.pushState(null, null, window.location.pathname + '?id=' + id);
+  }
+  document.getElementById('homepage-grid').classList.add('hidden');
+  const bottomContainer = document.getElementById('home-bottom-content');
+  if (bottomContainer) bottomContainer.classList.add('hidden');
+  
+  const articleView = document.getElementById('single-article-view');
+  articleView.classList.remove('hidden');
+  
+  // Increment views
+  if (!preventViewIncrement) {
+      if (article.views === undefined) { article.views = 0; }
+      article.views += 1;
+  }
+  
+  // Try to update firebase
+  if (!preventViewIncrement && typeof db !== 'undefined' && db) {
+     if (article.type === 'original') {
+         db.ref('originals/' + article.id).update({ views: article.views }).catch(e => console.log(e));
+     } else {
+         db.ref('articles/' + article.id).update({ views: article.views }).catch(e => console.log(e));
+     }
+  }
+  
+  const formattedDate = formatNewsDate(article.id);
+  
+  let layoutHTML = '';
+
+  if (article.type === 'video' || article.type === 'original') {
+      // STRICT VIDEO VIEW
+      const ytUrl = getYouTubeEmbedUrl(article.videoUrl);
+      let playerHtml = '';
+      if (ytUrl !== article.videoUrl) {
+          playerHtml = `<div class="mb-8 w-full aspect-video">
+             ${createYouTubeLazyPlayer(article.videoUrl, "w-full h-full", "w-full h-full")}
+          </div>`;
+      } else {
+          playerHtml = `<div class="custom-video-wrapper w-full mb-8 bg-black rounded-lg overflow-hidden border-2 border-news-purple shadow-[0_0_15px_rgba(59,7,100,0.5)] aspect-video">
+            <video controls preload="metadata" poster="${article.image || article.posterUrl || 'placeholder.jpg'}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; background:#000;">
+              <source src="${article.videoUrl}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>`;
+      }
+      
+      layoutHTML = `
+        <article class="bg-white p-4 md:p-8 shadow-sm rounded-lg border border-gray-200 flex-1 w-full">
+          <button onclick="closeArticle()" class="text-news-purple hover:text-news-purple flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-6 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back
+          </button>
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tighter flex-1">${article.title}</h1>
+            
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-gray-500 font-bold uppercase tracking-wide mb-6">
+            <span class="bg-news-purple text-white px-2 py-1 rounded-sm">${article.category || article.badge || 'VIDEO'}</span>
+            <span class="hidden md:inline">&bull;</span>
+            <span>${formattedDate}</span>
+            <span class="hidden md:inline">&bull;</span>
+            <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>${article.views} Views</span>
+          </div>
+          
+          ${playerHtml}
+          
+          <button onclick="shareArticle('${article.id}', '${article.title.replace(/'/g, "\\'")}', '')" class="bg-news-purple text-white px-6 py-3 mt-8 w-full sm:w-auto rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-purple-800 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+              Share Article
+          </button>
+        </article>
+      `;
+
+  } else {
+      // STANDARD NEWS ARTICLE
+      let topMediaHTML = '';
+      if (article.image) {
+          topMediaHTML = `<div class="w-full mb-8"><img loading="lazy" src="${article.image}" alt="${article.title}" class="w-full h-auto max-h-[500px] object-cover rounded-lg shadow-sm" /></div>`;
+      }
+      
+      let text = article.content || '<p>Content missing.</p>';
+      text = text.replace(/\[(?:see-also|related):\s*([^\]]+)\]/g, (match, targetTitle) => {
+         const cleanTargetTitle = targetTitle.trim().toLowerCase();
+         const relatedNews = articles.find(item =>
+             item.title && item.title.trim().toLowerCase() === cleanTargetTitle
+         );
+         if (relatedNews) {
+            return `<div class="see-also-container" style="margin: 20px 0; padding: 12px; background: #f9f9f9; border-left: 4px solid #7b1fa2; border-radius: 4px;">
+               <span style="font-size: 11px; font-weight: bold; color: #7b1fa2; text-transform: uppercase; display: block; margin-bottom: 4px;">See Also:</span>
+               <a href="#post-${relatedNews.id}" class="js-open-article see-also-link" style="color: #111; font-weight: bold; text-decoration: none; font-size: 15px; display: inline-block;" data-article-id="${relatedNews.id}">
+                  ${relatedNews.title} ➔
+               </a>
+            </div>`;
+         }
+         return '';
+      });
+
+      if (article.bodyImage) {
+         const midpoint = Math.floor(text.length / 2);
+         const brk = text.indexOf('</p>', midpoint);
+         if (brk !== -1) {
+           text = text.substring(0, brk + 4) + `<div class="w-full my-6"><img loading="lazy" src="${article.bodyImage}" class="w-full h-auto object-cover rounded-lg shadow-sm" /></div>` + text.substring(brk + 4);
+         } else {
+           text += `<div class="w-full my-6"><img loading="lazy" src="${article.bodyImage}" class="w-full h-auto object-cover rounded-lg shadow-sm" /></div>`;
+         }
+      }
+      
+      let audioHtml = '';
+      if (article.type === 'audio' && article.audioUrl) {
+          audioHtml = `<div class="custom-audio-container w-full mb-8 bg-[#f5f5f5] p-4 rounded-lg border-l-[4px] border-news-purple shadow-sm">
+          <p class="text-gray-900 font-bold mb-2 text-[13px]">🎵 Saurari Labari (Audio):</p>
+          <audio controls class="w-full h-[40px] mb-2">
+            <source src="${article.audioUrl}" type="audio/mpeg">
+            Your browser does not support the audio element.
+          </audio>
+          <div class="text-right mt-2">
+            <a href="${article.audioUrl}" download="AluTv-${article.title.replace(/\s+/g, '-').toLowerCase()}.mp3" target="_blank" class="bg-news-purple text-white px-3 py-1.5 no-underline rounded text-xs inline-block font-bold hover:bg-purple-800 transition-colors">
+              📥 Saukar da Audio (Direct Download)
+            </a>
+          </div>
+        </div>`;
+      }
+      
+      let contentHTML = `
+        <div class="text-base md:text-lg text-gray-800 leading-relaxed space-y-6">
+          <p class="font-bold text-lg md:text-xl text-gray-900 border-l-4 border-news-purple pl-4 py-1">${article.subtitle || article.summary || ''}</p>
+          <div class="rich-content space-y-4 pt-4">${text}</div>
+        </div>
+      `;
+      
+      layoutHTML = `
+        <article class="bg-white p-4 md:p-8 shadow-sm rounded-lg border border-gray-200 flex-1 w-full">
+          <button onclick="closeArticle()" class="text-news-purple hover:text-news-purple flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-6 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back
+          </button>
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <h1 class="text-3xl md:text-4xl font-black text-gray-900 leading-tight tracking-tighter flex-1">${article.title}</h1>
+            
+          </div>
+          
+          <div class="flex flex-wrap items-center gap-2 md:gap-3 text-xs md:text-sm text-gray-500 font-bold uppercase tracking-wide mb-6">
+            <span class="bg-news-purple text-white px-2 py-1 rounded-sm">${article.category || 'News'}</span>
+            <span class="hidden md:inline">&bull;</span>
+            <span>${formattedDate}</span>
+            <span class="hidden md:inline">&bull;</span>
+            <span>By Alu Tv News Desk</span>
+            <span class="hidden md:inline">&bull;</span>
+            <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>${article.views} Views</span>
+          </div>
+          
+          ${topMediaHTML}
+          
+          <button onclick="shareArticle('${article.id}', '${article.title.replace(/'/g, "\\'")}', '${(article.summary || '').replace(/'/g, "\\'")}')" class="bg-news-purple text-white px-6 py-3 mt-4 mb-8 w-full sm:w-auto rounded-lg text-sm font-bold flex items-center justify-center gap-2 hover:bg-purple-800 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+              Share Article
+          </button>
+          ${audioHtml}
+          ${contentHTML}
+        </article>
+      `;
+  }
+  
+  articleView.innerHTML = layoutHTML;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+function updateTicker(articlesList) {
+  const tickerElement = document.getElementById('breakingTicker');
+  if (!tickerElement) return;
+  
+  let tickerHtml = '';
+  
+  if (window.customTickerText) {
+     tickerHtml += `<span style="color: #ffffff; text-transform: uppercase;">• ${window.customTickerText}</span> &nbsp;&nbsp;&nbsp; `;
+  }
+  
+  // Get latest 5 published articles
+  const latestArticles = (articlesList || [])
+    .filter(a => a.status === 'Publish')
+    .slice(0, 5);
+    
+  if (latestArticles.length > 0) {
+    tickerHtml += latestArticles.map(a => 
+      `<span style="cursor:pointer;" class="js-open-article" data-article-id="${a.id}">• ${a.title}</span>`
+    ).join(' &nbsp;&nbsp;&nbsp; ');
+  } else if (!window.customTickerText) {
+    tickerHtml = `<span>• No breaking news at this time.</span>`;
+  }
+  
+  tickerElement.innerHTML = tickerHtml;
+}
+
+function renderArticles(category) {
+  const container = document.getElementById('main-content');
+  const bottomContainer = document.getElementById('home-bottom-content');
+  
+  if(container) container.innerHTML = '';
+  if(bottomContainer) bottomContainer.innerHTML = '';
+  
+  let filtered = articles.filter(a => a.status === 'Publish');
+  
+  const targetCategory = (category || 'Home').toLowerCase();
+  if (targetCategory !== 'home') {
+    filtered = filtered.filter(a => a.category && a.category.toLowerCase() === targetCategory);
+  }
+  
+  if (filtered.length === 0) {
+    if(container) container.innerHTML = '<div class="p-8 text-center text-gray-500 font-bold uppercase tracking-widest">No posts available in this section.</div>';
+    if(bottomContainer) bottomContainer.classList.add('hidden');
+    return;
+  }
+
+  const textArticles = filtered.filter(a => a.type === 'article' || !a.type);
+  const videoArticles = filtered.filter(a => a.type === 'video');
+  const audioArticles = filtered.filter(a => a.type === 'audio');
+  
+  let featureHtml = '';
+  if (textArticles.length > 0) {
+    featureHtml += `<div class="mb-12"><h2 class="text-xl md:text-2xl font-black text-gray-900 border-l-4 border-news-purple pl-3 mb-6 tracking-tighter uppercase">${targetCategory === 'home' ? 'Babban Labari' : category + ' - Babban Labari'}</h2>`;
+    
+    const feature = textArticles[0];
+    const featureDate = formatNewsDate(feature.id);
+    const featureMedia = feature.image ? `<img fetchpriority="high" src="${feature.image}" alt="${feature.title}" class="w-full h-[300px] sm:h-[400px] object-cover rounded-sm shadow-sm hover:opacity-90 transition-opacity" />` : `<div class="w-full h-[300px] sm:h-[400px] bg-gray-200 rounded-sm shadow-sm flex items-center justify-center"><span class="text-gray-400">No Image</span></div>`;
+    
+    featureHtml += `<article class="js-open-article cursor-pointer group mb-6" data-article-id="${feature.id}">
+      ${featureMedia}
+      <div class="mt-4">
+         <span class="text-news-purple text-[10px] font-bold px-2 py-1 uppercase bg-purple-100 rounded-sm mb-2 inline-block tracking-widest">${feature.category || 'News'}</span>
+         <h1 class="text-2xl lg:text-4xl font-black text-gray-900 leading-tight mb-2 group-hover:text-purple-800 transition-colors">${feature.title}</h1>
+         <p class="text-gray-600 text-sm sm:text-base max-w-3xl">${feature.subtitle || feature.summary}</p>
+         <div class="flex items-center gap-3 text-gray-500 text-[11px] font-medium block mt-2">
+       <span>${featureDate}</span>
+       <span class="flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>${feature.views || 0} Views</span>
+     </div>
+      </div>
+    </article><div id="secondary-feed-container"></div></div>`;
+  }
+  
+  if (container) {
+     container.innerHTML = featureHtml;
+  }
+
+  // Render the remaining lists asynchronously to unblock initial paint
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      let secondaryHtml = '';
+      if (textArticles.length > 0) {
+        const sub = textArticles.slice(1);
+        if (sub.length > 0) {
+          secondaryHtml += `<div class="flex flex-col">`;
+          secondaryHtml += sub.map(renderNewsItem).join('');
+          secondaryHtml += `</div>`;
+        }
+      }
+
+      let bottomContent = '';
+      if (targetCategory === 'home') {
+        bottomContent += `
+          <section class="premium-showcase-section">
+            <div class="section-header">
+              <h2>ALU TV ORIGINALS</h2>
+              <p>Exclusive Investigative Documentaries and In-depth Field Reporting</p>
+            </div>
+            <div class="cinematic-grid" id="documentaryGrid">
+              <!-- Populated by renderOriginals() -->
+            </div>
+          </section>
+        `;
+      }
+      
+      if (videoArticles.length > 0) {
+         let vidContent = `<div class="mb-12"><h2 class="text-xl md:text-2xl font-black text-gray-900 border-l-4 border-news-purple pl-3 mb-6 tracking-tighter uppercase">${targetCategory === 'home' ? 'Latest Videos' : category + ' Videos'}</h2>`;
+         vidContent += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+         vidContent += videoArticles.map(article => {
+            const artDate = formatNewsDate(article.id);
+            const embedUrl = getYouTubeEmbedUrl(article.videoUrl);
+            let playerHtml = '';
+            if (embedUrl !== article.videoUrl) {
+                playerHtml = createYouTubeLazyPlayer(article.videoUrl, "absolute inset-0 w-full h-full", "absolute inset-0 w-full h-full");
+            } else {
+                playerHtml = `<video controls preload="metadata" poster="${article.image || 'placeholder.jpg'}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; background:#000;" class="absolute inset-0 w-full h-full object-cover">
+                  <source src="${article.videoUrl}" type="video/mp4">
+                </video>`;
+            }
+            return `<article class="bg-black rounded-sm overflow-hidden shadow-md flex flex-col">
+               <div class="relative w-full aspect-video">
+                  ${playerHtml}
+               </div>
+               <div class="p-4 cursor-pointer flex-1 js-open-article" data-article-id="${article.id}">
+                  <span class="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1 inline-block">${article.category}</span>
+                  <h3 class="font-bold text-white text-base md:text-lg leading-tight hover:text-gray-300 transition-colors line-clamp-2 mb-2">${article.title}</h3>
+                  <span class="text-[11px] text-gray-400 font-medium">${artDate}</span>
+               </div>
+            </article>`;
+         }).join('');
+         vidContent += `</div></div>`;
+         
+         bottomContent += vidContent;
+      }
+
+      if (audioArticles.length > 0) {
+         secondaryHtml += `<div class="mb-12"><h2 class="text-xl md:text-2xl font-black text-gray-900 border-l-4 border-news-purple pl-3 mb-6 tracking-tighter uppercase">${targetCategory === 'home' ? 'Latest Audios' : category + ' Audios'}</h2>`;
+         secondaryHtml += audioArticles.map(article => {
+             const artDate = formatNewsDate(article.id);
+             return `<article class="js-open-article flex flex-col md:flex-row gap-4 mb-4 border border-gray-100 p-3 rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-white" data-article-id="${article.id}">
+                <div class="w-full md:w-48 h-32 bg-gray-100 flex items-center justify-center shrink-0 rounded-sm text-news-purple">
+                   <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path></svg>
+                </div>
+                <div class="flex flex-col justify-center">
+                   <span class="text-[10px] text-news-purple font-bold uppercase tracking-widest mb-1">${article.category}</span>
+                   <h3 class="font-bold text-gray-900 text-lg leading-tight mb-2">${article.title}</h3>
+                   <span class="text-[11px] text-gray-500 font-medium">${artDate}</span>
+                </div>
+             </article>`;
+         }).join('');
+         secondaryHtml += `</div>`;
+      }
+      
+      const secContainer = document.getElementById('secondary-feed-container');
+      if (secContainer) {
+          secContainer.innerHTML = secondaryHtml;
+      } else {
+          if(container && secondaryHtml) container.innerHTML += secondaryHtml;
+      }
+      
+      if(bottomContainer) {
+          bottomContainer.innerHTML = bottomContent;
+          if (targetCategory === 'home') {
+            renderOriginals();
+          }
+      }
+    }, 0);
+  });
+}
+
+// 4. Admin Dashboard Logic
+// Post Management Logic
+function renderAdminTable() {
+const tbody = document.getElementById('admin-post-table-body');
+tbody.innerHTML = articles.map(art => `
+<tr class="hover:bg-gray-50 border-b last:border-0">
+<td class="p-3 font-semibold text-gray-800">${art.title}</td>
+<td class="p-3 text-gray-600">${art.category}</td>
+<td class="p-3">
+<span class="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${art.status === 'Draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${art.status}</span>
+</td>
+<td class="p-3 text-right space-x-3">
+<button onclick="editPost('${art.id}')" class="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-wider">Edit</button>
+${currentUserRole === 'superadmin' ? `<button onclick="deletePost('${art.id}')" class="text-news-purple hover:text-purple-800 font-bold text-xs uppercase tracking-wider">Delete</button>` : ''}
+</td>
+</tr>
+`).join('');
+}
+function editPost(id) {
+const article = articles.find(a => a.id == id);
+if (!article) return;
+document.getElementById('admin-art-id').value = article.id;
+document.getElementById('admin-art-type').value = article.type || 'article';
+window.togglePostType();
+document.getElementById('admin-art-title').value = article.title;
+if(document.getElementById('admin-art-subtitle')) document.getElementById('admin-art-subtitle').value = article.subtitle || '';
+document.getElementById('admin-art-category').value = article.category;
+document.getElementById('admin-art-status').value = article.status;
+document.getElementById('admin-art-content').innerHTML = article.content || '';
+if(document.getElementById('adminVideoUrl')) document.getElementById('adminVideoUrl').value = article.videoUrl || '';
+if(document.getElementById('adminAudioUrl')) document.getElementById('adminAudioUrl').value = article.audioUrl || '';
+document.getElementById('admin-art-form-title').innerText = 'Edit Post';
+document.getElementById('admin-art-submit-btn').innerText = 'Update Post';
+document.getElementById('admin-art-cancel-btn').classList.remove('hidden');
+document.getElementById('admin-dashboard').scrollIntoView({ behavior: 'smooth' });
+}
+function deletePost(id) {
+if (!db) return alert('Please configure Firebase first!');
+if (confirm('Are you sure you want to delete this post?')) {
+db.ref('articles/' + id).remove()
+.then(() => {
+// Reset form if we were editing this deleted post
+if (document.getElementById('admin-art-id').value == id) {
+resetArticleForm();
+}
+alert('Article deleted.');
+})
+.catch(err => alert('Error deleting article: ' + err));
+}
+}
+function resetArticleForm() {
+document.getElementById('admin-art-id').value = '';
+document.getElementById('admin-art-type').value = 'article';
+window.togglePostType();
+document.getElementById('admin-art-title').value = '';
+document.getElementById('admin-art-subtitle').value = '';
+document.getElementById('admin-art-category').value = 'Politics';
+document.getElementById('admin-art-status').value = 'Publish';
+document.getElementById('admin-art-content').innerHTML = '';
+document.getElementById('admin-art-image').value = '';
+document.getElementById('admin-art-body-image').value = '';
+document.getElementById('adminVideoUrl').value = '';
+document.getElementById('adminAudioUrl').value = '';
+document.getElementById('admin-art-form-title').innerText = 'Add New Article';
+document.getElementById('admin-art-submit-btn').innerText = 'Publish Post';
+document.getElementById('admin-art-cancel-btn').classList.add('hidden');
+}
+// Handle Content Updates
+window.togglePostType = function() {
+  const type = document.getElementById('admin-art-type').value;
+  document.getElementById('admin-field-subtitle').classList.toggle('hidden', type !== 'article');
+  document.getElementById('admin-field-content').classList.toggle('hidden', type !== 'article');
+  document.getElementById('admin-field-top-image').classList.toggle('hidden', type !== 'article');
+  document.getElementById('admin-field-body-image').classList.toggle('hidden', type !== 'article');
+  document.getElementById('admin-field-video').classList.toggle('hidden', type !== 'video');
+  document.getElementById('admin-field-audio').classList.toggle('hidden', type !== 'audio');
+};
+
+async function handleArticleSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('admin-art-id').value;
+  const type = document.getElementById('admin-art-type').value;
+  const title = document.getElementById('admin-art-title').value;
+  const subtitle = document.getElementById('admin-art-subtitle').value;
+  const category = document.getElementById('admin-art-category').value;
+  const status = document.getElementById('admin-art-status').value;
+  const content = document.getElementById('admin-art-content').innerHTML;
+
+  // Extract a summary
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = content;
+  const plainText = tempDiv.textContent || tempDiv.innerText || "";
+  const summary = plainText.substring(0, 150) + (plainText.length > 150 ? '...' : '');
+
+  const submitBtn = document.getElementById('admin-art-submit-btn');
+  const originalBtnText = submitBtn.innerText;
+  submitBtn.innerText = 'Processing...';
+  submitBtn.disabled = true;
+
+  try {
+    let videoUrl = '';
+    let audioUrl = '';
+    let imageStr = '';
+    let bodyImageStr = '';
+
+    if (id) {
+      const existingArticle = articles.find(a => a.id == id);
+      if (existingArticle) {
+        videoUrl = existingArticle.videoUrl || '';
+        audioUrl = existingArticle.audioUrl || '';
+        imageStr = existingArticle.image || '';
+        bodyImageStr = existingArticle.bodyImage || '';
+      }
+    }
+
+    if (type === 'video') {
+      let vUrl = document.getElementById('adminVideoUrl').value;
+      if (vUrl) {
+        if (vUrl.includes('drive.google.com')) {
+          const match = vUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+            vUrl = `https://docs.google.com/uc?export=download&id=${match[1]}`;
+          }
+        }
+        videoUrl = vUrl;
+      } else if (!id) {
+        throw new Error("Video URL is required for Video posts.");
+      }
+    }
+
+    if (type === 'audio') {
+      let aUrl = document.getElementById('adminAudioUrl').value;
+      if (aUrl) {
+        if (aUrl.includes('drive.google.com')) {
+          const match = aUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+          if (match && match[1]) {
+            aUrl = `https://docs.google.com/uc?export=download&id=${match[1]}`;
+          }
+        }
+        audioUrl = aUrl;
+      } else if (!id) {
+        throw new Error("Audio URL is required for Audio posts.");
+      }
+    }
+
+    if (type === 'article') {
+      const fileInput = document.getElementById('admin-art-image');
+      const imageFile = fileInput.files[0];
+      if (imageFile) {
+        imageStr = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(imageFile);
+        });
+      } else if (!id) {
+        throw new Error("Top cover image is required for articles.");
+      }
+
+      const bodyFileInput = document.getElementById('admin-art-body-image');
+      const bodyImageFile = bodyFileInput.files[0];
+      if (bodyImageFile) {
+        bodyImageStr = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(bodyImageFile);
+        });
+      }
+    }
+
+    saveArticleData(id, type, title, subtitle, category, status, content, summary, imageStr, bodyImageStr, videoUrl, audioUrl);
+    submitBtn.innerText = originalBtnText;
+    submitBtn.disabled = false;
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert('Error: ' + err.message);
+    submitBtn.innerText = originalBtnText;
+    submitBtn.disabled = false;
+  }
+}
+
+function saveArticleData(id, type, title, subtitle, category, status, content, summary, image, bodyImage, videoUrl, audioUrl) {
+  if (!db) return alert('Please configure Firebase first!');
+  const data = { type, title, subtitle, category, status, content, summary, image, bodyImage, videoUrl, audioUrl };
+  
+  if (id) {
+    db.ref('articles/' + id).update(data)
+      .then(() => {
+        alert('Post updated successfully!');
+        resetArticleForm();
+      })
+      .catch(err => alert("Error updating post: " + err));
+  } else {
+    const newId = Date.now().toString();
+    data.id = newId;
+    db.ref('articles/' + newId).set(data)
+      .then(() => {
+        alert('Post published successfully!');
+        resetArticleForm();
+      })
+      .catch(err => alert("Error publishing post: " + err));
+  }
+}
+function handleSocialLinksUpdate(e) {
+e.preventDefault();
+if (!db) return alert('Please configure Firebase first!');
+const facebook = document.getElementById('admin-facebook-url').value;
+const youtube = document.getElementById('admin-youtube-url').value;
+db.ref('settings/social').set({ facebook, youtube })
+.then(() => {
+alert('Social media links updated successfully!');
+})
+.catch(err => alert('Error updating social links: ' + err));
+}
+function handleVideoUpdate(e) {
+e.preventDefault();
+if (!db) return alert('Please configure Firebase first!');
+const ytInput = document.getElementById('admin-video-youtube').value;
+const fileInput = document.getElementById('admin-video-url');
+const file = fileInput.files[0];
+if (ytInput) {
+db.ref('settings/videoUrl').set(ytInput)
+.then(() => {
+e.target.reset();
+alert('Video updated to YouTube successfully!');
+})
+.catch(err => alert('Error updating video: ' + err));
+} else if (file) {
+const reader = new FileReader();
+reader.onload = function(event) {
+const url = event.target.result;
+db.ref('settings/videoUrl').set(url)
+.then(() => {
+e.target.reset();
+alert('Video file updated successfully!');
+})
+.catch(err => alert('Error updating video: ' + err));
+};
+reader.readAsDataURL(file);
+} else {
+alert("Please provide a YouTube URL or upload a video file.");
+}
+}
+
+function handleAdUpdate(e) {
+e.preventDefault();
+if (!db) return alert('Please configure Firebase first!');
+const title = document.getElementById('admin-ad-title-input').value;
+const link = document.getElementById('admin-ad-link-input').value;
+const fileInput = document.getElementById('admin-ad-image-input');
+const file = fileInput.files[0];
+if (file) {
+const reader = new FileReader();
+reader.onload = function(event) {
+const image = event.target.result;
+db.ref('settings/ad').set({ title, link, image })
+.then(() => {
+e.target.reset();
+alert('Ad updated successfully!');
+})
+.catch(err => alert('Error updating ad: ' + err));
+};
+reader.readAsDataURL(file);
+}
+}
+
+async function handleOriginalSubmit(e) {
+  e.preventDefault();
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Publishing...';
+  
+  try {
+    const title = document.getElementById('admin-orig-title').value;
+    const badge = document.getElementById('admin-orig-badge').value;
+    const videoUrl = document.getElementById('admin-orig-video-url').value;
+    const posterFile = document.getElementById('admin-orig-poster').files[0];
+    
+    let posterUrl = '';
+    if (posterFile) {
+        posterUrl = await new Promise((resolve) => {
+             const reader = new FileReader();
+             reader.onload = (e) => resolve(e.target.result);
+             reader.readAsDataURL(posterFile);
+        });
+        
+        // Also attempt firebase upload in background if available
+        if (typeof firebase !== 'undefined' && firebase.storage) {
+            const storageRef = firebase.storage().ref('originals/' + Date.now() + '_' + posterFile.name);
+            storageRef.put(posterFile).then(snapshot => snapshot.ref.getDownloadURL()).then(url => {
+               // Update firebase original when complete
+               if (typeof db !== 'undefined' && db) {
+                   db.ref('originals/' + id).update({ posterUrl: url });
+               }
+            }).catch(err => console.error("Firebase poster upload failed:", err));
+        }
+    }
+    
+    const id = Date.now();
+    const newOriginal = {
+      id,
+      type: 'original',
+      title,
+      badge,
+      posterUrl,
+      videoUrl,
+      timestamp: Date.now()
+    };
+    
+    originals.unshift(newOriginal);
+    renderOriginals();
+    localStorage.setItem('alu_originals', JSON.stringify(originals));
+    
+    if (typeof db !== 'undefined' && db) {
+       db.ref('originals/' + id).set({
+           ...newOriginal,
+           timestamp: firebase.database.ServerValue.TIMESTAMP
+       }).catch(e => console.log('Firebase sync error', e));
+    }
+    
+    alert('Alu TV Original Published Successfully!');
+    e.target.reset();
+    
+    // Close modal logic if modal exists
+    const closeBtn = document.getElementById('closeModalBtn');
+    if(closeBtn) closeBtn.click();
+  } catch (error) {
+    console.error('Error publishing original:', error);
+    alert('Failed to publish original: ' + error.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Publish Original';
+  }
+}
+
+async function handleTickerSave(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+  try {
+    const tickerText = document.getElementById('admin-ticker-text').value;
+    await db.ref('settings/ticker').set(tickerText);
+    alert('Ticker Updated Successfully!');
+  } catch (error) {
+    console.error('Error updating ticker:', error);
+    alert('Failed to update ticker: ' + error.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save / Update';
+  }
+}
+
+async function handleTickerClear(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Clearing...';
+  try {
+    await db.ref('settings/ticker').set(null);
+    document.getElementById('admin-ticker-text').value = '';
+    alert('Ticker Cleared Successfully!');
+  } catch (error) {
+    console.error('Error clearing ticker:', error);
+    alert('Failed to clear ticker: ' + error.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Clear / Delete';
+  }
+}
+
+function handleOfficeFlyerUpdate(e) {
+e.preventDefault();
+if (currentUserRole !== 'superadmin' && currentUserRole !== 'admin') {
+alert('Not authorized');
+return;
+}
+const link = document.getElementById('admin-flyer-link-input').value;
+const fileInput = document.getElementById('admin-flyer-image-input');
+const file = fileInput.files[0];
+if (file) {
+const reader = new FileReader();
+reader.onload = function(event) {
+const img = new Image();
+img.onload = function() {
+const canvas = document.createElement('canvas');
+let width = img.width;
+let height = img.height;
+const maxWidth = 1200;
+const maxHeight = 1200;
+if (width > height) {
+if (width > maxWidth) {
+height = Math.round(height *= maxWidth / width);
+width = maxWidth;
+}
+} else {
+if (height > maxHeight) {
+width = Math.round(width *= maxHeight / height);
+height = maxHeight;
+}
+}
+canvas.width = width;
+canvas.height = height;
+const ctx = canvas.getContext('2d');
+ctx.drawImage(img, 0, 0, width, height);
+const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+db.ref('office_flyer/current').set({ link, image: compressedBase64 })
+.then(() => {
+e.target.reset();
+alert('Office Flyer updated successfully!');
+})
+.catch(err => alert("Error updating flyer: " + err));
+};
+img.src = event.target.result;
+};
+reader.readAsDataURL(file);
+}
+}
+function handleCreateUser(e) {
+e.preventDefault();
+if (currentUserRole !== 'superadmin') return;
+const name = document.getElementById('new-user-name').value;
+const email = document.getElementById('new-user-email').value;
+const password = document.getElementById('new-user-password').value;
+const role = document.getElementById('new-user-role').value;
+// Check if email exists
+if (allUsers.find(u => u.email === email)) {
+alert('User with this email already exists!');
+return;
+}
+db.ref('users').push({ name, email, password, role })
+.then(() => {
+alert('User created successfully!');
+e.target.reset();
+})
+.catch(err => alert("Error creating user: " + err));
+}
+function deleteUser(id) {
+if (currentUserRole !== 'superadmin') return;
+if (confirm('Are you sure you want to delete this user?')) {
+db.ref('users/' + id).remove()
+.then(() => alert('User deleted.'))
+.catch(err => alert('Error deleting user: ' + err));
+}
+}
+function renderUsersTable() {
+const tbody = document.getElementById('admin-users-table-body');
+if (!tbody) return;
+tbody.innerHTML = allUsers.map(u => `
+<tr class="hover:bg-gray-50 transition-colors">
+<td class="p-3">${u.name || '-'}</td>
+<td class="p-3 font-bold">${u.email}</td>
+<td class="p-3 uppercase tracking-wider text-xs">${u.role}</td>
+<td class="p-3 text-right space-x-3">
+${u.role !== 'superadmin' ? `<button onclick="deleteUser('${u.id}')" class="text-news-purple hover:text-purple-800 font-bold text-xs uppercase tracking-wider">Delete</button>` : '<span class="text-xs text-gray-400">Cannot Delete</span>'}
+</td>
+</tr>
+`).join('');
+}
+function openLoginModal() {
+document.getElementById('login-modal').classList.remove('hidden');
+}
+function closeLoginModal() {
+document.getElementById('login-modal').classList.add('hidden');
+document.getElementById('login-error').classList.add('hidden');
+}
+function handleLoginSubmit(e) {
+e.preventDefault();
+const userEmail = document.getElementById('login-username').value;
+const pass = document.getElementById('login-password').value;
+// Temporary master password bypass for recovery
+if (userEmail === "admin@alutv.com" && pass === "AluTv2026@") {
+currentUserRole = 'superadmin';
+closeLoginModal();
+applyRoleUI('superadmin');
+e.target.reset();
+alert('Logged in via Master Account successfully! Proceeding to Dashboard.');
+return;
+}
+db.ref('users').once('value')
+.then(snapshot => {
+const users = snapshot.val();
+if (!users) {
+// First time login -> Register Super Admin
+const newSuperAdmin = { name: 'Super Admin', email: userEmail, password: pass, role: 'superadmin' };
+db.ref('users').push(newSuperAdmin).then(() => {
+currentUserRole = 'superadmin';
+closeLoginModal();
+applyRoleUI('superadmin');
+e.target.reset();
+alert('Super Admin registered successfully! Proceeding to Dashboard.');
+});
+} else {
+// Check credentials
+let loggedInRole = null;
+Object.values(users).forEach(u => {
+if (u.email === userEmail && u.password === pass) {
+loggedInRole = u.role;
+}
+});
+if (loggedInRole) {
+currentUserRole = loggedInRole;
+closeLoginModal();
+applyRoleUI(loggedInRole);
+e.target.reset();
+} else {
+document.getElementById('login-error').innerText = "Invalid credentials";
+document.getElementById('login-error').classList.remove('hidden');
+}
+}
+})
+.catch(err => {
+console.error("Login error: ", err);
+document.getElementById('login-error').innerText = "Database connection error.";
+document.getElementById('login-error').classList.remove('hidden');
+});
+}
+function logoutAdmin() {
+currentUserRole = null;
+document.getElementById('admin-dashboard').classList.add('hidden');
+alert('Logged out successfully.');
+}
+function applyRoleUI(role) {
+document.getElementById('admin-dashboard').classList.remove('hidden');
+document.getElementById('admin-dashboard').scrollIntoView({ behavior: 'smooth' });
+document.getElementById('admin-role-display').innerText = role;
+const mediaConfig = document.getElementById('admin-media-config');
+const postManagement = document.getElementById('admin-post-management');
+const statusDropdown = document.getElementById('admin-art-status');
+const manageUsers = document.getElementById('admin-manage-users');
+// Reset visibility
+mediaConfig.classList.remove('hidden');
+postManagement.classList.remove('hidden');
+manageUsers.classList.add('hidden');
+statusDropdown.innerHTML = '<option value="Publish">Publish</option><option value="Draft">Draft</option>';
+if (role === 'superadmin') {
+manageUsers.classList.remove('hidden');
+renderUsersTable();
+} else if (role === 'editor') {
+mediaConfig.classList.add('hidden');
+} else if (role === 'reporter') {
+mediaConfig.classList.add('hidden');
+postManagement.classList.add('hidden');
+statusDropdown.innerHTML = '<option value="Draft">Draft</option>';
+}
+renderAdminTable(); // Re-render table to show/hide delete buttons
+}
+
+function initializePushNotifications() {
+  if (!("Notification" in window)) {
+    console.log("This browser does not support desktop notification");
+    return;
+  }
+  
+  if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        console.log("Push notification permission granted successfully.");
+      }
+    });
+  }
+}
+
+initializePushNotifications();
+// Initialize the homepage on load
+renderArticles('Home');
+renderAdminTable();
+// Handle browser back/forward buttons
+window.addEventListener('popstate', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryId = urlParams.get('id');
+    const hashPost = window.location.hash.startsWith('#post-');
+    if (queryId || hashPost) {
+        const postId = queryId || window.location.hash.replace('#post-', '');
+        if (articles.length > 0) openArticle(postId, true);
+    } else if (!window.location.hash || window.location.hash === '#') {
+        const activeNav = document.querySelector('.nav-link.border-white');
+        const currentCategory = activeNav ? activeNav.dataset.target : 'Home';
+        document.getElementById('homepage-grid').classList.remove('hidden');
+        document.getElementById('single-article-view').classList.add('hidden');
+        renderArticles(currentCategory);
+        const bottomContainerNav = document.getElementById('home-bottom-content');
+        if (bottomContainerNav && currentCategory === 'Home') bottomContainerNav.classList.remove('hidden');
+    }
+});
+window.addEventListener('hashchange', () => {
+if (window.location.hash.startsWith('#post-')) {
+const postId = queryId || window.location.hash.replace('#post-', '');
+if (articles.length > 0) openArticle(postId, true);
+} else if (window.location.hash === '' || window.location.hash === '#') {
+const activeNav = document.querySelector('.nav-link.border-white');
+const currentCategory = activeNav ? activeNav.dataset.target : 'Home';
+// Use a simpler approach to restore grid without calling navigate
+document.getElementById('homepage-grid').classList.remove('hidden');
+document.getElementById('single-article-view').classList.add('hidden');
+renderArticles(currentCategory);
+}
+});
+</script>
+</body>
+</html>
