@@ -570,25 +570,35 @@ ALU TV
 </div>
 <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
 <div class="bg-white p-6 rounded shadow-sm border border-gray-200 h-fit">
-  <h2 class="font-bold text-lg mb-4 border-b pb-2">Upload Alu TV Original</h2>
+  <h2 class="font-bold text-lg mb-4 border-b pb-2">Upload Alu TV Original / Video Report</h2>
   <form onsubmit="handleOriginalSubmit(event)" class="space-y-4">
     <div>
-      <label class="block text-xs font-bold text-gray-700 mb-1">Title</label>
-      <input type="text" id="admin-orig-title" required class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+      <label class="block text-xs font-bold text-gray-700 mb-1">Video Title</label>
+      <input type="text" id="admin-orig-title" required placeholder="Enter video title..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
     </div>
     <div>
-      <label class="block text-xs font-bold text-gray-700 mb-1">Category Badge</label>
-      <input type="text" id="admin-orig-badge" required placeholder="e.g. CULTURAL HISTORY" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+      <label class="block text-xs font-bold text-gray-700 mb-1">Category / Badge</label>
+      <select id="admin-orig-badge" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+        <option value="DOCUMENTARY">DOCUMENTARY</option>
+        <option value="INVESTIGATION">INVESTIGATION</option>
+        <option value="HERITAGE">HERITAGE</option>
+        <option value="NEWS">NEWS</option>
+        <option value="POLITICS">POLITICS</option>
+        <option value="SECURITY">SECURITY</option>
+        <option value="REPORT">REPORT</option>
+        <option value="SPECIAL">SPECIAL</option>
+      </select>
     </div>
     <div>
-      <label class="block text-xs font-bold text-gray-700 mb-1">Poster Image URL (or upload)</label>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Video URL / Embed Link (Google Drive, YouTube, MP4)</label>
+      <input type="url" id="admin-orig-video-url" required placeholder="Paste Google Drive view link, YouTube URL, or MP4 link..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
+      <p class="text-[10px] text-gray-500 mt-1">Supports Google Drive preview links, YouTube embed/watch links, and direct video file URLs.</p>
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-gray-700 mb-1">Poster Image File (Optional thumbnail)</label>
       <input type="file" id="admin-orig-poster" accept="image/*" class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple bg-white">
     </div>
-    <div>
-      <label class="block text-xs font-bold text-gray-700 mb-1">Video URL (YouTube or MP4)</label>
-      <input type="url" id="admin-orig-video-url" required placeholder="https://..." class="w-full border border-gray-300 rounded p-2 text-sm focus:outline-news-purple">
-    </div>
-    <button type="submit" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-purple-800 transition-colors">Publish Original</button>
+    <button type="submit" class="bg-news-purple text-white px-4 py-2 rounded text-xs font-bold uppercase tracking-wider w-full hover:bg-purple-800 transition-colors">Publish Video Report</button>
   </form>
 </div>
 
@@ -619,6 +629,22 @@ ALU TV
 </tr>
 </thead>
 <tbody id="admin-post-table-body" class="text-sm divide-y divide-gray-200">
+</tbody>
+</table>
+</div>
+</div>
+<div id="admin-video-management" class="max-w-6xl mx-auto mt-8 bg-white p-6 rounded shadow-sm border border-gray-200">
+<h2 class="font-bold text-lg mb-4 border-b pb-2">Manage Videos / Alu Originals</h2>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[600px]">
+<thead>
+<tr class="bg-gray-100 text-xs uppercase tracking-wider text-gray-600">
+<th class="p-3 border-b">Title</th>
+<th class="p-3 border-b">Category / Badge</th>
+<th class="p-3 border-b text-right">Actions</th>
+</tr>
+</thead>
+<tbody id="admin-video-table-body" class="text-sm divide-y divide-gray-200">
 </tbody>
 </table>
 </div>
@@ -785,67 +811,12 @@ db.ref('originals').on('value', (snapshot) => {
     renderOriginals();
 });
 
-function toggleVideoControlBar() {
-    const bar = document.getElementById('quickVideoControlBar');
-    if (bar) {
-        bar.classList.toggle('hidden');
-        if (!bar.classList.contains('hidden')) {
-            bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    }
-}
-
-function handleQuickVideoAdd(e) {
-    e.preventDefault();
-    const title = document.getElementById('quickVideoTitle').value.trim();
-    const videoUrl = document.getElementById('quickVideoUrl').value.trim();
-    const badge = document.getElementById('quickVideoBadge').value;
-    const posterUrl = document.getElementById('quickVideoPoster').value.trim();
-
-    if (!title || !videoUrl) {
-        alert('Please enter video title and URL!');
-        return;
-    }
-
-    const newVideo = {
-        id: Date.now(),
-        title: title,
-        badge: badge || 'ORIGINAL',
-        videoUrl: videoUrl,
-        posterUrl: posterUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=800',
-        views: 0
-    };
-
-    // 1. Save locally
-    let savedOriginals = JSON.parse(localStorage.getItem('alu_originals')) || [];
-    savedOriginals.unshift(newVideo);
-    localStorage.setItem('alu_originals', JSON.stringify(savedOriginals));
-
-    // 2. Save in memory
-    originals.unshift(newVideo);
-
-    // 3. Save to Firebase if available
-    if (typeof db !== 'undefined' && db) {
-        db.ref('originals/' + newVideo.id).set(newVideo).catch(err => console.warn('Firebase original error:', err));
-    }
-
-    // 4. Reset & hide form
-    document.getElementById('quickVideoTitle').value = '';
-    document.getElementById('quickVideoUrl').value = '';
-    document.getElementById('quickVideoPoster').value = '';
-    toggleVideoControlBar();
-
-    // 5. Render
-    renderOriginals();
-    alert('Video published successfully!');
-}
-
 function deleteOriginalVideo(id, event) {
     if (event) {
         event.stopPropagation();
         event.preventDefault();
     }
-    if (!confirm('Are you sure you want to delete this video?')) return;
+    if (!confirm('Are you sure you want to delete this video report?')) return;
 
     // 1. Persist deleted ID in localStorage
     const deletedIds = JSON.parse(localStorage.getItem('alu_deleted_video_ids')) || [];
@@ -869,6 +840,42 @@ function deleteOriginalVideo(id, event) {
 
     // 5. Re-render instantly
     renderOriginals();
+    renderAdminVideoTable();
+}
+
+function renderAdminVideoTable() {
+    const tbody = document.getElementById('admin-video-table-body');
+    if (!tbody) return;
+
+    const deletedIds = JSON.parse(localStorage.getItem('alu_deleted_video_ids')) || [];
+    let savedOriginals = JSON.parse(localStorage.getItem('alu_originals')) || [];
+    
+    let combinedOriginals = [...originals];
+    savedOriginals.forEach(so => {
+        if (!combinedOriginals.some(o => String(o.id) === String(so.id))) {
+            combinedOriginals.push(so);
+        }
+    });
+
+    let displayList = (combinedOriginals && combinedOriginals.length > 0) ? combinedOriginals : (typeof FALLBACK_ORIGINALS !== 'undefined' ? FALLBACK_ORIGINALS : []);
+    displayList = displayList.filter(orig => !deletedIds.includes(String(orig.id)) && !deletedIds.includes(Number(orig.id)));
+
+    if (displayList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-gray-500 font-bold">No active videos available.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = displayList.map(orig => `
+        <tr class="hover:bg-gray-50 border-b last:border-0">
+          <td class="p-3 font-semibold text-gray-800">${orig.title}</td>
+          <td class="p-3 text-gray-600"><span class="bg-purple-100 text-news-purple px-2 py-0.5 rounded text-xs font-bold">${orig.badge || 'ORIGINAL'}</span></td>
+          <td class="p-3 text-right">
+            <button onclick="deleteOriginalVideo('${orig.id}', event)" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3 py-1.5 rounded transition-colors cursor-pointer">
+              Delete Video
+            </button>
+          </td>
+        </tr>
+    `).join('');
 }
 
 function renderOriginals() {
@@ -878,7 +885,6 @@ function renderOriginals() {
     const deletedIds = JSON.parse(localStorage.getItem('alu_deleted_video_ids')) || [];
     let savedOriginals = JSON.parse(localStorage.getItem('alu_originals')) || [];
     
-    // Combine Firebase and local saved originals without duplicates
     let combinedOriginals = [...originals];
     savedOriginals.forEach(so => {
         if (!combinedOriginals.some(o => String(o.id) === String(so.id))) {
@@ -887,17 +893,12 @@ function renderOriginals() {
     });
 
     let displayList = (combinedOriginals && combinedOriginals.length > 0) ? combinedOriginals : FALLBACK_ORIGINALS;
-    
-    // Filter out deleted video IDs
     displayList = displayList.filter(orig => !deletedIds.includes(String(orig.id)) && !deletedIds.includes(Number(orig.id)));
 
     if (displayList.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full py-10 px-4 text-center text-gray-400 bg-neutral-900 border border-neutral-800 rounded-lg">
-            <p class="text-sm font-semibold mb-3">No videos available at this time</p>
-            <button onclick="toggleVideoControlBar()" class="bg-news-purple hover:bg-purple-700 text-white text-xs font-bold px-4 py-2 rounded uppercase tracking-wider transition-colors">
-              + Add Video
-            </button>
+            <p class="text-sm font-semibold">No active video reports available at this time.</p>
           </div>
         `;
         return;
@@ -906,30 +907,12 @@ function renderOriginals() {
     grid.innerHTML = displayList.map(orig => {
        const dateStr = (typeof orig.id === 'number' && orig.id > 1000000000) ? formatNewsDate(orig.id) : 'Featured Video';
        const poster = orig.posterUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=800';
-       const embedUrl = getYouTubeEmbedUrl(orig.videoUrl);
-       
-       let playerHtml = '';
-       if (embedUrl && embedUrl !== orig.videoUrl) {
-           playerHtml = createYouTubeLazyPlayer(orig.videoUrl, "w-full aspect-video border-0 overflow-hidden rounded-t", "w-full aspect-video border-0");
-       } else if (orig.videoUrl) {
-           playerHtml = `
-              <video controls preload="metadata" poster="${poster}" class="w-full aspect-video object-cover bg-black block rounded-t">
-                <source src="${orig.videoUrl}" type="video/mp4">
-                Your browser does not support the video tag.
-              </video>
-           `;
-       } else {
-           playerHtml = `<div class="w-full aspect-video bg-gray-900 flex items-center justify-center text-gray-400 font-bold">Video Unavailable</div>`;
-       }
+       const playerHtml = getUniversalVideoPlayerHtml(orig.videoUrl, poster, "w-full aspect-video bg-black rounded-t overflow-hidden relative");
+
        return `
           <div class="cinematic-card bg-neutral-900 border border-neutral-800 rounded-md overflow-hidden shadow-lg flex flex-col justify-between relative group" style="display:block !important; visibility:visible !important; opacity:1 !important;">
             <div class="video-container relative w-full aspect-video bg-black">
               ${playerHtml}
-              <!-- Delete Video Button Overlay -->
-              <button onclick="deleteOriginalVideo('${orig.id}', event)" title="Delete Video" class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] px-2.5 py-1 rounded shadow-md transition-all flex items-center gap-1 z-20 cursor-pointer">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                Delete Video
-              </button>
             </div>
             <div class="p-4 flex-1 flex flex-col justify-between js-open-article cursor-pointer" data-article-id="${orig.id}">
               <div>
@@ -954,6 +937,7 @@ articles = data ? Object.values(data) : [];
 // Sort by descending ID (which acts as a timestamp for new posts)
 articles.sort((a, b) => b.id - a.id);
 renderAdminTable();
+renderAdminVideoTable();
 if (window.togglePostType) window.togglePostType();
 const urlParams = new URLSearchParams(window.location.search);
 const queryId = urlParams.get('id');
@@ -1020,22 +1004,7 @@ footerYt.classList.add('hidden');
 }
 });
 function getResponsiveVideoPlayer(url) {
-if (!url) return '<p style="color:white; padding:10px;">No video uploaded</p>';
-const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-const match = url.match(youtubeRegex);
-if (match && match[1]) {
-const videoId = match[1];
-return `
-<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:8px;">
-  ${createYouTubeLazyPlayer('https://www.youtube.com/watch?v=' + videoId, 'w-full h-full absolute inset-0', 'w-full h-full absolute inset-0')}
-</div>`;
-} else {
-return `
-<video controls playsinline preload="metadata" style="width:100%; max-height:450px; border-radius:8px; background:#000;">
-<source src="${url}" type="video/mp4">
-Your browser does not support the video tag.
-</video>`;
-}
+    return getUniversalVideoPlayerHtml(url, '', 'w-full aspect-video bg-black rounded-lg overflow-hidden relative');
 }
 db.ref('settings/videoUrl').on('value', (snapshot) => {
 const url = snapshot.val();
@@ -1103,7 +1072,7 @@ function shareArticle(id, title, text) {
     }
 }
 
-// FUNCTION DON TACE LOKACI (DATE FORMATTER)
+// DATE FORMATTER FUNCTION
 function formatNewsDate(dateString) {
   if (!dateString) return "Just Now";
   
@@ -1112,19 +1081,19 @@ function formatNewsDate(dateString) {
   const now = new Date();
   const timeDifference = now - newsDate;
   
-  // Idan labarin bai kai sa'a guda da duba shi ba
+  // Under 1 hour
   const minutes = Math.floor(timeDifference / 60000);
   if (minutes < 60) {
     return minutes <= 1 ? "Just Now" : `${minutes} mins ago`;
   }
   
-  // Idan bai kai kwana 1 ba
+  // Under 1 day
   const hours = Math.floor(minutes / 60);
   if (hours < 24) {
     return `${hours} hours ago`;
   }
   
-  // Idan ya wuce kwana daya, zai nuna ainihin ranar (Misali: Jul 8, 2026)
+  // Over 1 day
   return newsDate.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -1132,6 +1101,12 @@ function formatNewsDate(dateString) {
   });
 }
 
+
+function getGoogleDriveFileId(url) {
+    if (!url) return '';
+    const match = url.match(/(?:drive\.google\.com\/(?:file\/d\/|open\?id=)|docs\.google\.com\/uc\?export=download&id=)([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : '';
+}
 
 function getYouTubeVideoId(url) {
     if (!url) return '';
@@ -1185,6 +1160,35 @@ function getYouTubeEmbedUrl(url) {
     return videoId ? `https://www.youtube.com/embed/${videoId}?controls=1&modestbranding=1&rel=0&iv_load_policy=3` : url;
 }
 
+function getUniversalVideoPlayerHtml(url, posterUrl = '', containerClass = 'w-full aspect-video bg-black') {
+    if (!url) {
+        return `<div class="${containerClass} flex items-center justify-center text-gray-400 font-bold text-xs bg-neutral-900">Video Unavailable</div>`;
+    }
+
+    const driveId = getGoogleDriveFileId(url);
+    if (driveId) {
+        return `
+            <div class="${containerClass} overflow-hidden rounded-t">
+                <iframe src="https://drive.google.com/file/d/${driveId}/preview" class="w-full h-full border-0" allow="autoplay" allowfullscreen></iframe>
+            </div>
+        `;
+    }
+
+    const ytId = getYouTubeVideoId(url);
+    if (ytId) {
+        return createYouTubeLazyPlayer(url, containerClass + " border-0 overflow-hidden rounded-t", "w-full h-full absolute inset-0");
+    }
+
+    const posterAttr = posterUrl ? `poster="${posterUrl}"` : '';
+    return `
+        <div class="${containerClass} overflow-hidden rounded-t">
+            <video controls playsinline preload="metadata" ${posterAttr} class="w-full h-full object-cover bg-black">
+                <source src="${url}" type="video/mp4">
+                Your browser does not support HTML5 video.
+            </video>
+        </div>
+    `;
+}
 
 function closeArticle() {
   document.getElementById('single-article-view').classList.add('hidden');
@@ -1199,7 +1203,7 @@ function closeArticle() {
   history.pushState(null, null, window.location.pathname);
 }
 
-function getSidebarVideosHtml() {
+function getArticleFooterVideosHtml() {
     const deletedIds = JSON.parse(localStorage.getItem('alu_deleted_video_ids')) || [];
     let savedOriginals = JSON.parse(localStorage.getItem('alu_originals')) || [];
     
@@ -1214,34 +1218,27 @@ function getSidebarVideosHtml() {
     displayList = displayList.filter(orig => !deletedIds.includes(String(orig.id)) && !deletedIds.includes(Number(orig.id)));
 
     if (!displayList || displayList.length === 0) {
-        return `<p class="text-xs text-gray-400">No videos available at this time.</p>`;
+        return `<p class="text-xs text-gray-400 col-span-full">No related videos available.</p>`;
     }
 
-    return displayList.slice(0, 5).map(orig => {
+    return displayList.slice(0, 3).map(orig => {
         const poster = orig.posterUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=800';
-        const embedUrl = getYouTubeEmbedUrl(orig.videoUrl);
-        
-        let playerHtml = '';
-        if (embedUrl && embedUrl !== orig.videoUrl) {
-            playerHtml = createYouTubeLazyPlayer(orig.videoUrl, "w-full aspect-video border-0 overflow-hidden rounded", "w-full aspect-video border-0");
-        } else if (orig.videoUrl) {
-            playerHtml = `
-               <video controls preload="metadata" poster="${poster}" class="w-full aspect-video object-cover bg-black rounded">
-                 <source src="${orig.videoUrl}" type="video/mp4">
-               </video>
-            `;
-        } else {
-            playerHtml = `<div class="w-full aspect-video bg-gray-800 flex items-center justify-center text-gray-400 text-xs font-bold rounded">Video Preview</div>`;
-        }
+        const playerHtml = getUniversalVideoPlayerHtml(orig.videoUrl, poster, "w-full aspect-video bg-black rounded-t overflow-hidden relative");
 
         return `
-          <div class="bg-neutral-800 border border-neutral-700/70 rounded-lg p-3 space-y-2">
-            <div class="w-full aspect-video bg-black rounded overflow-hidden relative">
+          <div class="bg-neutral-800 border border-neutral-700/70 rounded-lg overflow-hidden shadow-sm flex flex-col justify-between">
+            <div class="w-full aspect-video bg-black relative">
               ${playerHtml}
             </div>
-            <div>
-              <span class="bg-news-purple text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">${orig.badge || 'VIDEO'}</span>
-              <h4 class="text-xs font-bold text-white hover:text-purple-300 transition-colors line-clamp-2 mt-1 cursor-pointer js-open-article" data-article-id="${orig.id}">${orig.title}</h4>
+            <div class="p-3 flex-1 flex flex-col justify-between">
+              <div>
+                <span class="bg-news-purple text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider mb-1 inline-block">${orig.badge || 'VIDEO'}</span>
+                <h4 class="text-xs font-bold text-white hover:text-purple-300 transition-colors line-clamp-2 cursor-pointer js-open-article" data-article-id="${orig.id}">${orig.title}</h4>
+              </div>
+              <div class="text-gray-400 text-[10px] mt-2 pt-1 border-t border-neutral-800 flex items-center justify-between">
+                <span>${(typeof orig.id === 'number' && orig.id > 1000000000) ? formatNewsDate(orig.id) : 'Featured Video'}</span>
+                <span>${orig.views || 0} Views</span>
+              </div>
             </div>
           </div>
         `;
@@ -1345,9 +1342,8 @@ function openArticle(id, preventViewIncrement = false) {
   }
   
   let layoutHTML = `
-    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-      <!-- MAIN ARTICLE LEFT COLUMN -->
-      <article class="lg:col-span-2 bg-white p-4 md:p-8 shadow-sm rounded-lg border border-gray-200 flex-1 w-full">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <article class="bg-white p-4 md:p-8 shadow-sm rounded-lg border border-gray-200 w-full">
         <div class="flex items-center justify-between mb-6">
           <button onclick="closeArticle()" class="text-news-purple hover:text-purple-900 flex items-center gap-2 text-sm font-bold uppercase tracking-wider transition-colors cursor-pointer bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -1389,21 +1385,19 @@ function openArticle(id, preventViewIncrement = false) {
         </div>
       </article>
 
-      <!-- RIGHT SIDEBAR: VIDEOS -->
-      <aside class="article-sidebar space-y-6 lg:sticky lg:top-4">
-        <div class="bg-neutral-900 border border-neutral-800 rounded-lg p-4 shadow-md text-white">
-          <div class="flex items-center justify-between mb-4 border-b border-neutral-800 pb-3">
-            <h3 class="text-sm font-black uppercase tracking-wider text-white flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-news-purple animate-pulse"></span>
-              Alu Original Videos
-            </h3>
-            <span class="text-[10px] bg-news-purple text-white px-2 py-0.5 rounded uppercase font-bold">Featured</span>
-          </div>
-          <div class="space-y-4">
-            ${getSidebarVideosHtml()}
-          </div>
+      <!-- RELATED VIDEOS / ALU ORIGINALS FOOTER SECTION AT BOTTOM OF ARTICLE VIEW -->
+      <section class="bg-neutral-900 border border-neutral-800 rounded-lg p-6 text-white shadow-lg">
+        <div class="flex items-center justify-between mb-6 border-b border-neutral-800 pb-4">
+          <h3 class="text-lg font-black uppercase tracking-wider text-white flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-news-purple animate-pulse"></span>
+            Related Videos & Alu Originals
+          </h3>
+          <span class="text-xs bg-news-purple text-white px-2.5 py-1 rounded uppercase font-bold">Featured Videos</span>
         </div>
-      </aside>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          ${getArticleFooterVideosHtml()}
+        </div>
+      </section>
     </div>
   `;
 
@@ -1441,61 +1435,12 @@ function updateTicker(articlesList) {
 function getVideoSectionHtml() {
   return `
     <section id="video-section" class="premium-showcase-section my-8" style="display:block !important; visibility:visible !important; opacity:1 !important; min-height:300px;">
-      <div class="section-header mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-black text-purple-400 tracking-tight uppercase flex items-center gap-2">
-            <svg class="w-6 h-6 text-news-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-            ALU TV ORIGINALS & VIDEO REPORTS
-          </h2>
-          <p class="text-sm text-gray-400">Exclusive Investigative Documentaries, Field Reports, and Live Broadcasts</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button onclick="toggleVideoControlBar()" class="bg-news-purple hover:bg-purple-700 text-white text-xs font-bold uppercase tracking-wider px-3.5 py-2 rounded shadow transition-colors flex items-center gap-1.5 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add / Manage Videos
-          </button>
-        </div>
-      </div>
-
-      <div id="quickVideoControlBar" class="hidden bg-neutral-900 border border-neutral-800 rounded-lg p-4 mb-6 shadow-xl">
-        <div class="flex justify-between items-center mb-3 pb-2 border-b border-neutral-800">
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            Video Management Control Bar
-          </h3>
-          <button onclick="toggleVideoControlBar()" class="text-gray-400 hover:text-white text-xs font-bold px-2 py-1 bg-neutral-800 rounded">✕ Close</button>
-        </div>
-        <form onsubmit="handleQuickVideoAdd(event)" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-          <div>
-            <label class="block text-gray-300 font-medium mb-1">Video Title</label>
-            <input type="text" id="quickVideoTitle" required placeholder="Enter video title..." class="w-full bg-neutral-800 border border-neutral-700 text-white p-2 rounded focus:outline-none focus:border-purple-500">
-          </div>
-          <div>
-            <label class="block text-gray-300 font-medium mb-1">YouTube or MP4 Video URL</label>
-            <input type="text" id="quickVideoUrl" required placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-neutral-800 border border-neutral-700 text-white p-2 rounded focus:outline-none focus:border-purple-500">
-          </div>
-          <div>
-            <label class="block text-gray-300 font-medium mb-1">Badge / Tag</label>
-            <select id="quickVideoBadge" class="w-full bg-neutral-800 border border-neutral-700 text-white p-2 rounded focus:outline-none focus:border-purple-500">
-              <option value="DOCUMENTARY">DOCUMENTARY</option>
-              <option value="INVESTIGATION">INVESTIGATION</option>
-              <option value="HERITAGE">HERITAGE</option>
-              <option value="NEWS">NEWS</option>
-              <option value="POLITICS">POLITICS</option>
-              <option value="SECURITY">SECURITY</option>
-              <option value="REPORT">REPORT</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-gray-300 font-medium mb-1">Cover Poster Image URL (Optional)</label>
-            <input type="text" id="quickVideoPoster" placeholder="https://images.unsplash.com/..." class="w-full bg-neutral-800 border border-neutral-700 text-white p-2 rounded focus:outline-none focus:border-purple-500">
-          </div>
-          <div class="md:col-span-2 flex justify-end gap-2 mt-1">
-            <button type="submit" class="bg-news-purple hover:bg-purple-700 text-white font-bold px-4 py-2 rounded text-xs uppercase tracking-wider transition-colors flex items-center gap-1 cursor-pointer">
-              Publish Video
-            </button>
-          </div>
-        </form>
+      <div class="section-header mb-6">
+        <h2 class="text-2xl font-black text-purple-400 tracking-tight uppercase flex items-center gap-2">
+          <svg class="w-6 h-6 text-news-purple" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+          ALU TV ORIGINALS & VIDEO REPORTS
+        </h2>
+        <p class="text-sm text-gray-400">Exclusive Investigative Documentaries, Field Reports, and Live Broadcasts</p>
       </div>
 
       <div class="cinematic-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="documentaryGrid">
@@ -1591,15 +1536,7 @@ function renderArticles(category) {
          vidContent += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
          vidContent += videoArticles.map(article => {
             const artDate = formatNewsDate(article.id);
-            const embedUrl = getYouTubeEmbedUrl(article.videoUrl);
-            let playerHtml = '';
-            if (embedUrl !== article.videoUrl) {
-                playerHtml = createYouTubeLazyPlayer(article.videoUrl, "absolute inset-0 w-full h-full", "absolute inset-0 w-full h-full");
-            } else {
-                playerHtml = `<video controls preload="metadata" poster="${article.image || 'placeholder.jpg'}" style="width:100%; height:100%; object-fit:cover; border-radius:8px; background:#000;" class="absolute inset-0 w-full h-full object-cover">
-                  <source src="${article.videoUrl}" type="video/mp4">
-                </video>`;
-            }
+            const playerHtml = getUniversalVideoPlayerHtml(article.videoUrl, article.image || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=800', "w-full aspect-video bg-black rounded-t overflow-hidden relative");
             return `<article class="bg-black rounded-sm overflow-hidden shadow-md flex flex-col">
                <div class="relative w-full aspect-video">
                   ${playerHtml}
@@ -1961,6 +1898,7 @@ async function handleOriginalSubmit(e) {
     
     originals.unshift(newOriginal);
     renderOriginals();
+    renderAdminVideoTable();
     localStorage.setItem('alu_originals', JSON.stringify(originals));
     
     if (typeof db !== 'undefined' && db) {
@@ -2174,11 +2112,13 @@ document.getElementById('admin-dashboard').scrollIntoView({ behavior: 'smooth' }
 document.getElementById('admin-role-display').innerText = role;
 const mediaConfig = document.getElementById('admin-media-config');
 const postManagement = document.getElementById('admin-post-management');
+const videoManagement = document.getElementById('admin-video-management');
 const statusDropdown = document.getElementById('admin-art-status');
 const manageUsers = document.getElementById('admin-manage-users');
 // Reset visibility
 mediaConfig.classList.remove('hidden');
 postManagement.classList.remove('hidden');
+if (videoManagement) videoManagement.classList.remove('hidden');
 manageUsers.classList.add('hidden');
 statusDropdown.innerHTML = '<option value="Publish">Publish</option><option value="Draft">Draft</option>';
 if (role === 'superadmin') {
@@ -2189,9 +2129,11 @@ mediaConfig.classList.add('hidden');
 } else if (role === 'reporter') {
 mediaConfig.classList.add('hidden');
 postManagement.classList.add('hidden');
+if (videoManagement) videoManagement.classList.add('hidden');
 statusDropdown.innerHTML = '<option value="Draft">Draft</option>';
 }
 renderAdminTable(); // Re-render table to show/hide delete buttons
+renderAdminVideoTable(); // Re-render video management table
 }
 
 function initializePushNotifications() {
